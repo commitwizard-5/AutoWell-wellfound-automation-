@@ -8,7 +8,7 @@
   </head>
   <body>
     <main class="shell">
-      {% if is_running %}<meta http-equiv="refresh" content="3">{% endif %}
+      {% if is_running or is_drafting %}<meta http-equiv="refresh" content="3">{% endif %}
       <header class="hero">
         <div>
           <p class="eyebrow">LOCAL-FIRST JOB WORKFLOW</p>
@@ -25,6 +25,7 @@
         <article class="panel settings-panel">
           <div class="panel-heading"><div><p class="eyebrow">STEP 1</p><h2>Local settings</h2></div><span class="pill {{ 'pill-safe' if not config_errors else '' }}">{{ 'Ready' if not config_errors else 'Needs setup' }}</span></div>
           <form action="/settings" method="post" class="form-stack">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label>Gemini API key<input name="api_key" type="password" autocomplete="off" placeholder="{{ 'Saved locally — leave blank to keep it' if config.api_key else 'Paste your Gemini API key' }}"></label>
             <label>Firefox profile path<input name="profile_path" value="{{ config.profile_path }}" placeholder="C:\\Users\\you\\AppData\\Roaming\\Mozilla..."></label>
             <label>Résumé PDF path<input name="resume_path" value="{{ config.resume_path }}" placeholder="C:\\Users\\you\\Documents\\resume.pdf"></label>
@@ -35,6 +36,7 @@
         <article class="panel action-panel">
           <p class="eyebrow">STEP 2</p><h2>Find matching jobs</h2><p>The importer opens Wellfound’s Filters panel, adds the title keyword under Included keywords, and selects job type, company size, and remote culture there before importing results.</p>
           <form action="/jobs/import" method="post" class="filter-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label>Country<input name="country" value="{{ filters.country }}" list="countries" placeholder="India"></label>
             <datalist id="countries"><option value="India"><option value="United States"><option value="United Kingdom"><option value="Canada"><option value="Germany"><option value="Australia"></datalist>
             <label>Job title keywords<input name="keyword" value="{{ filters.keyword }}" placeholder="Software Engineer"></label>
@@ -47,13 +49,24 @@
       </section>
       <section class="panel jobs-panel">
         <div class="panel-heading"><div><p class="eyebrow">STEP 3</p><h2>Review roles</h2></div><span class="job-count">{{ jobs|length }} imported</span></div>
+        <form action="/applications/draft" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% if jobs %}
-        <form action="/applications/draft" method="post"><div class="job-list">
+        <div class="job-list">
           {% for job in jobs %}
           <div class="job-card"><label class="job-select"><input type="checkbox" name="job_ids" value="{{ job.id }}"><span class="checkmark"></span><span class="job-main"><strong>{{ job.role }}</strong><span>{{ job.company }}</span></span></label><span class="job-meta"><span>{{ job.location or 'Location unavailable' }}</span><span>{{ job.stipend or 'Compensation unavailable' }}</span></span><a href="{{ job.link }}" target="_blank" rel="noreferrer">Open ↗</a><details><summary>Job description</summary><p>{{ job.description }}</p></details></div>
           {% endfor %}
-        </div><button class="button" type="submit">Create application drafts</button></form>
+        </div><button class="button" type="submit">Create application drafts</button>
         {% else %}<div class="empty-state">Your imported roles will appear here for review.</div>{% endif %}
+        </form>
+        {% if drafts %}
+        <section class="draft-list" aria-label="Generated cover-letter drafts">
+          <h3>Generated drafts</h3>
+          {% for draft in drafts %}
+          <article class="draft-card"><strong>{{ draft.role }}</strong><span>{{ draft.company }}</span><p>{{ draft.cover_letter }}</p></article>
+          {% endfor %}
+        </section>
+        {% endif %}
       </section>
     </main>
   </body>

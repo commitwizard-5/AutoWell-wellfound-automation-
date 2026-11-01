@@ -33,7 +33,7 @@ Autoply is a local-first AI job application workflow assistant. It collects Well
 
 ## How It Works
 
-The job importer opens Wellfound's Filters panel, applies the keyword through Included keywords, selects the requested job type, company size, and remote-culture options, then imports the resulting listings. It uses Wellfound's location results for country and does not call a separate Wellfound API. If Wellfound changes its filter interface and a requested control cannot be found or verified, the import reports an error instead of silently ignoring that filter.
+The job importer opens Wellfound's main jobs page, keeps an already-selected location, and uses the page's job-title picker for keyword searches. It opens the Filters panel only when a job type, company size, or remote-only option is requested. It does not call a separate Wellfound API. If a requested selection cannot be found or verified, the import reports an error instead of silently applying incomplete filters.
 
 The dashboard uses a server-rendered Jinja template at `templates/index.html`. For the dashboard and its functionality to work correctly, run the application through `main.py`.
 

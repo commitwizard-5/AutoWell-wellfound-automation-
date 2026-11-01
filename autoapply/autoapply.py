@@ -1,9 +1,13 @@
 import re
+import shutil
+import tempfile
 from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import urlparse
 
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -14,22 +18,81 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from autoapply.helper.gotolink import Gotolink
 
 
+def _cached_geckodriver_path() -> str:
+    """Resolve WebDriver without the Unix permission update that fails on Windows."""
+    manager = GeckoDriverManager()
+    return manager._get_driver_binary_path(manager.driver)
+
+
+@dataclass
+class AutomationProfile:
+    """Disposable copy of a Firefox profile used exclusively by WebDriver."""
+
+    path: Path
+
+    def cleanup(self) -> None:
+        shutil.rmtree(self.path, ignore_errors=True)
+
+
+def create_automation_profile(
+    source: Path,
+    *,
+    temporary_root: Path | None = None,
+) -> AutomationProfile:
+    """Copy browser session data without files that lock Firefox profiles."""
+    if not source.is_dir():
+        raise ValueError(f"Firefox profile directory was not found: {source}")
+
+    destination = Path(
+        tempfile.mkdtemp(
+            prefix="autoply-firefox-",
+            dir=str(temporary_root) if temporary_root else None,
+        )
+    )
+    try:
+        shutil.copytree(
+            source,
+            destination,
+            dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns(
+                "parent.lock",
+                ".parentlock",
+                "lock",
+                "storage",
+                "cache2",
+                "startupCache",
+                "thumbnails",
+                "shader-cache",
+                "datareporting",
+            ),
+        )
+    except Exception:
+        shutil.rmtree(destination, ignore_errors=True)
+        raise
+    return AutomationProfile(path=destination)
+
+
 class JobScraper:
 
     JOB_PATH = re.compile(r"^/jobs/\d+(?:-[^/]+)?$")
 
     def __init__(self, profile_path, progress_callback: Callable[[str], None] | None = None):
         self.options = FirefoxOptions()
+        self._automation_profile = create_automation_profile(Path(profile_path))
 
         self.options.add_argument("-profile")
-        self.options.add_argument(profile_path)
+        self.options.add_argument(str(self._automation_profile.path))
 
-        self.driver = webdriver.Firefox(
-            service=FirefoxService(
-                executable_path=GeckoDriverManager().install()
-            ),
-            options=self.options
-        )
+        try:
+            self.driver = webdriver.Firefox(
+                service=FirefoxService(
+                    executable_path=_cached_geckodriver_path()
+                ),
+                options=self.options
+            )
+        except Exception:
+            self._automation_profile.cleanup()
+            raise
 
         self.driver.get('https://wellfound.com/jobs')
 
@@ -42,14 +105,22 @@ class JobScraper:
         if self.progress_callback:
             self.progress_callback(message)
 
-    def _search_input(self, field_name: str, aliases: tuple[str, ...]):
-        selectors = (
+    def _search_input(
+        self,
+        field_name: str,
+        aliases: tuple[str, ...],
+        *,
+        include_buttons: bool = False,
+    ):
+        selectors = [
             "input:not([type='hidden'])",
             "textarea",
             "[role='textbox']",
             "[role='combobox']",
             "[contenteditable='true']",
-        )
+        ]
+        if include_buttons:
+            selectors.extend(("button", "[role='button']"))
         elements = []
         for selector in selectors:
             elements.extend(self.driver.find_elements(By.CSS_SELECTOR, selector))
@@ -83,6 +154,7 @@ class JobScraper:
                   node.getAttribute("name"),
                   node.getAttribute("id"),
                   node.getAttribute("data-testid"),
+                  node.innerText,
                   ...labelledBy,
                   ...labels,
                   ].filter(Boolean).join(" ").replace(/\\s+/g, " ").trim(),
@@ -121,6 +193,36 @@ class JobScraper:
             f"Visible fields: {available}"
         )
 
+    def _wait_for_search_input(
+        self,
+        field_name: str,
+        aliases: tuple[str, ...],
+        *,
+        include_buttons: bool = False,
+    ):
+        """Wait for Wellfound's client-rendered search control to become available."""
+        last_error: RuntimeError | None = None
+
+        def find_input(_driver):
+            nonlocal last_error
+            try:
+                return self._search_input(
+                    field_name,
+                    aliases,
+                    include_buttons=include_buttons,
+                )
+            except RuntimeError as error:
+                last_error = error
+                return False
+
+        try:
+            return WebDriverWait(self.driver, 15).until(find_input)
+        except TimeoutException as error:
+            detail = str(last_error) if last_error else "no matching control became visible"
+            raise RuntimeError(
+                f"Wellfound {field_name} search field was not available after the jobs page loaded. {detail}"
+            ) from error
+
     @staticmethod
     def _fill_search_field(element, value: str) -> None:
         element.click()
@@ -128,6 +230,92 @@ class JobScraper:
         element.send_keys(Keys.BACKSPACE)
         if value:
             element.send_keys(value)
+
+    def _has_visible_button(self, label: str) -> bool:
+        normalized_label = " ".join(label.casefold().split())
+        for selector in ("button", "[role='button']"):
+            for element in self.driver.find_elements(By.CSS_SELECTOR, selector):
+                try:
+                    if (
+                        element.is_displayed()
+                        and " ".join(element.text.casefold().split()) == normalized_label
+                    ):
+                        return True
+                except StaleElementReferenceException:
+                    continue
+        return False
+
+    def _click_search_button(self, label: str) -> None:
+        normalized_label = " ".join(label.casefold().split())
+
+        def click_button(_driver):
+            for selector in ("button", "[role='button']"):
+                for element in self.driver.find_elements(By.CSS_SELECTOR, selector):
+                    try:
+                        if (
+                            element.is_displayed()
+                            and " ".join(element.text.casefold().split()) == normalized_label
+                        ):
+                            element.click()
+                            return True
+                    except StaleElementReferenceException:
+                        continue
+            return False
+
+        try:
+            WebDriverWait(self.driver, 15).until(click_button)
+        except TimeoutException as error:
+            raise RuntimeError(f"Wellfound's {label!r} search control was not found.") from error
+
+    def _select_search_value(self, button_label: str, value: str, field_name: str) -> None:
+        self._click_search_button(button_label)
+
+        def find_autocomplete(driver):
+            for selector in ("input[id^='react-select-']", "input[aria-autocomplete='list']"):
+                for element in driver.find_elements(By.CSS_SELECTOR, selector):
+                    try:
+                        if element.is_displayed():
+                            return element
+                    except StaleElementReferenceException:
+                        continue
+            return False
+
+        try:
+            field = WebDriverWait(self.driver, 15).until(find_autocomplete)
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"Wellfound did not open the {field_name} selector after clicking {button_label!r}."
+            ) from error
+
+        self._fill_search_field(field, value)
+        field.send_keys(Keys.ARROWDOWN, Keys.ENTER)
+        try:
+            WebDriverWait(self.driver, 10).until(lambda _driver: self._has_visible_button(value))
+        except TimeoutException as error:
+            raise RuntimeError(
+                f"Wellfound did not confirm {value!r} as the selected {field_name}."
+            ) from error
+
+    def _set_location(self, country: str) -> None:
+        if self._has_visible_button(country):
+            return
+        if not self._has_visible_button("Add a location"):
+            raise RuntimeError(
+                f"Wellfound's location selector is not available for {country!r}. "
+                "Choose a location on the jobs page and try again."
+            )
+        self._select_search_value("Add a location", country, "location")
+        current_path = urlparse(self.driver.current_url).path.rstrip("/")
+        if current_path != "/jobs":
+            raise RuntimeError(
+                "Wellfound redirected away from the main jobs page after setting "
+                "the location. No filters were applied; return to the jobs page and try again."
+            )
+
+    def _apply_job_title(self, keyword: str) -> None:
+        if not keyword or self._has_visible_button(keyword):
+            return
+        self._select_search_value("Add a job title", keyword, "job-title")
 
     def _open_filter_panel(self) -> None:
         def find_filter_button(_driver):
@@ -173,40 +361,6 @@ class JobScraper:
         except TimeoutException as error:
             raise RuntimeError("Wellfound's Filters panel did not open.") from error
 
-    def _apply_included_keyword(self, keyword: str) -> None:
-        if not keyword:
-            return
-        candidates = self.driver.find_elements(
-            By.CSS_SELECTOR,
-            "input:not([type='hidden']), textarea, [role='textbox'], [contenteditable='true']",
-        )
-        for element in candidates:
-            if not element.is_displayed():
-                continue
-            context = self.driver.execute_script(
-                """
-                let node = arguments[0];
-                for (let depth = 0; node && depth < 5; depth++, node = node.parentElement) {
-                  const text = (node.innerText || "").replace(/\\s+/g, " ").trim();
-                  const normalized = text.toLowerCase();
-                  if (normalized.includes("included keywords") && !normalized.includes("excluded keywords")) {
-                    return text;
-                  }
-                }
-                return "";
-                """,
-                element,
-            )
-            context = " ".join(str(context or "").casefold().split())
-            if "included keywords" not in context or "excluded keywords" in context:
-                continue
-            self._fill_search_field(element, keyword)
-            element.send_keys(Keys.ENTER)
-            return
-        raise RuntimeError(
-            "Could not find the 'Included keywords' field in Wellfound's Filters panel."
-        )
-
     def _submit_filter_panel(self) -> None:
         for selector in ("button", "[role='button']"):
             for element in self.driver.find_elements(By.CSS_SELECTOR, selector):
@@ -219,42 +373,27 @@ class JobScraper:
                 ):
                     element.click()
                     return
+        raise RuntimeError("Wellfound's Filters panel did not expose an apply-results button.")
 
     def _search_wellfound(self, country: str, keyword: str) -> None:
-        self.keyword_search_applied = bool(keyword)
+        self.keyword_search_applied = False
         stage = "opening Wellfound jobs"
         self.driver.get("https://wellfound.com/jobs")
         try:
             if country:
                 stage = "setting the country/location"
-                try:
-                    location_input = self._search_input(
-                        "location",
-                        ("location", "city", "country"),
-                    )
-                except RuntimeError as error:
-                    if "search field was not found" not in str(error):
-                        raise
-                    self.driver.get(self._location_url(country))
-                else:
-                    self._fill_search_field(location_input, country)
-                    location_input.send_keys(Keys.ENTER)
-            stage = "opening Wellfound's Filters panel"
-            self._open_filter_panel()
-            stage = "setting the Included keywords filter"
-            self._apply_included_keyword(keyword)
+                self._set_location(country)
+            if keyword:
+                stage = "setting the job-title search"
+                self._apply_job_title(keyword)
+                self.keyword_search_applied = True
         except Exception as error:
             detail = str(error).strip() or type(error).__name__
             raise RuntimeError(
                 f"Could not configure Wellfound's search filters while {stage}: {detail}"
             ) from error
 
-        self._report("Opened Wellfound filters and set location and included keywords.")
-
-    @staticmethod
-    def _location_url(country: str) -> str:
-        slug = re.sub(r"[^a-z0-9]+", "-", country.casefold()).strip("-")
-        return f"https://wellfound.com/location/{slug}" if slug else "https://wellfound.com/jobs"
+        self._report("Set the Wellfound location and job-title search.")
 
     @staticmethod
     def _matches_job_title(title: str, keyword: str) -> bool:
@@ -374,16 +513,6 @@ class JobScraper:
                 f"{selected_type!r} is not an employment type available on Wellfound. "
                 "Choose Full Time, Contract, Internship, or Cofounder."
             )
-        if self._filter_control("Full Time") is None and self._filter_control("Job Types") is None:
-            job_details = self._filter_control("Job Details")
-            if job_details is not None:
-                job_details.click()
-        self._set_filter_group(
-            "Job Types",
-            list(employment_types.values()),
-            employment_types.get(selected_type, ""),
-        )
-
         company_size = filters.get("company_size", "")
         size_labels = {
             "1-10": "1-10 employees",
@@ -396,17 +525,33 @@ class JobScraper:
         }
         if company_size and company_size not in size_labels:
             raise RuntimeError(f"Unsupported Wellfound company size: {company_size!r}.")
-        self._set_filter_group(
-            "Company size",
-            list(size_labels.values()),
-            size_labels.get(company_size, ""),
-        )
+        remote_only = filters.get("remote_only") == "true"
+        if not selected_type and not company_size and not remote_only:
+            return
 
-        self._apply_filter_option(
-            "Remote culture",
-            "Only show jobs at companies that are mostly or fully remote",
-            selected=filters.get("remote_only") == "true",
-        )
+        self._open_filter_panel()
+        if selected_type:
+            if self._filter_control("Full Time") is None and self._filter_control("Job Types") is None:
+                job_details = self._filter_control("Job Details")
+                if job_details is not None:
+                    job_details.click()
+            self._set_filter_group(
+                "Job Types",
+                list(employment_types.values()),
+                employment_types[selected_type],
+            )
+        if company_size:
+            self._set_filter_group(
+                "Company size",
+                list(size_labels.values()),
+                size_labels[company_size],
+            )
+        if remote_only:
+            self._apply_filter_option(
+                "Remote culture",
+                "Only show jobs at companies that are mostly or fully remote",
+            )
+        self._submit_filter_panel()
 
     def _job_links(self) -> list[tuple[str, str]]:
         """Find job URLs and their own visible link text."""
@@ -470,7 +615,6 @@ class JobScraper:
         filters = filters or {}
         self._search_wellfound(filters.get("country", ""), filters.get("keyword", ""))
         self._apply_wellfound_filters(filters)
-        self._submit_filter_panel()
         try:
             WebDriverWait(self.driver, 20).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href*='/jobs/']"))
@@ -538,3 +682,7 @@ class JobScraper:
                 pass
             finally:
                 self.driver = None
+        automation_profile = getattr(self, "_automation_profile", None)
+        if automation_profile is not None:
+            automation_profile.cleanup()
+            self._automation_profile = None

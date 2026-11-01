@@ -23,7 +23,6 @@ class CoverLetterGenerator:
         self.pdf_handler = PDFHandler(self.resume_path)
 
     def generate_cover_letter(self, job_description: str) -> str:
-        """Generate a letter by sending résumé content and the job description to Gemini."""
 
         try:
             project_links = self.pdf_handler.extract_links()
