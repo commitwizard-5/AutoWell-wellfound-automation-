@@ -148,7 +148,26 @@ input {
   font-size: 0.9rem;
 }
 
+textarea,
+.form-stack select {
+  width: 100%;
+  margin-top: 7px;
+  padding: 11px 12px;
+  border: 1px solid #cbd8cf;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
 input:focus {
+  outline: 3px solid #b9e5c8;
+  border-color: var(--accent);
+}
+
+textarea:focus,
+.form-stack select:focus {
   outline: 3px solid #b9e5c8;
   border-color: var(--accent);
 }
@@ -354,39 +373,6 @@ input:focus {
   border-radius: 10px;
   text-align: center;
   color: var(--muted);
-}
-
-.draft-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 24px;
-  border-top: 1px solid var(--line);
-  padding-top: 20px;
-}
-
-.draft-list h3 {
-  margin: 0;
-  font: 700 1.1rem / 1.1 Georgia, serif;
-}
-
-.draft-card {
-  display: grid;
-  gap: 5px;
-  padding: 15px;
-  border: 1px solid #c9e7d2;
-  border-radius: 10px;
-  background: #eff9f1;
-}
-
-.draft-card span,
-.draft-card p {
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.draft-card p {
-  margin: 4px 0 0;
-  white-space: pre-wrap;
 }
 
 @media (max-width: 720px) {

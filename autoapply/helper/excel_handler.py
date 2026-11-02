@@ -17,16 +17,17 @@ class ExcelHandler:
             self.sheet = self.workbook.active
             if self.sheet.cell(row=1, column=5).value != "Status":
                 self.sheet.cell(row=1, column=5, value="Status")
+            if self.sheet.cell(row=1, column=6).value != "Error":
+                self.sheet.cell(row=1, column=6, value="Error")
         else:
             self.workbook = Workbook()
             self.sheet = self.workbook.active
-            self.sheet.append(["Date", "Job Link", "Job Description", "Cover Letter", "Status"])
+            self.sheet.append(["Date", "Job Link", "Job Description", "Cover Letter", "Status", "Error"])
 
-    def add_application(self, link, description, cover_letter, status):
+    def add_application(self, link, description, cover_letter, status, error=""):
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.sheet.append([current_date, link, description, cover_letter, status])
+        self.sheet.append([current_date, link, description, cover_letter, status, error])
         
 
     def save_excel(self):
         self.workbook.save(filename=self.file_path)
-

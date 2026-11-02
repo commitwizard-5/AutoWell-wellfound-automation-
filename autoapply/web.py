@@ -7,31 +7,24 @@ Google Gemini API. Review Google's current data-handling terms before use.
 
 from __future__ import annotations
 
-import hmac
-import ipaddress
 import os
-import secrets
 import threading
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from dotenv import load_dotenv, set_key
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from autoapply.autoapply import JobScraper
-from autoapply.drafts import create_drafts
 from autoapply.helper.excel_handler import ExcelHandler
-from autoapply.helper.genai import CoverLetterGenerator
+from autoapply.helper.gotolink import Gotolink
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = PROJECT_ROOT / ".env"
 TEMPLATES = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
-TRUSTED_ORIGIN = "http://127.0.0.1:8000"
-CSRF_TOKEN = secrets.token_urlsafe(32)
 
 
 class WorkflowState:
@@ -39,9 +32,8 @@ class WorkflowState:
 
     def __init__(self) -> None:
         self.jobs: list[dict[str, str]] = []
-        self.drafts: list[dict[str, str]] = []
+        self.submitted_job_links: set[str] = set()
         self.is_running = False
-        self.is_drafting = False
         self.message = "Configure Autoply, then import jobs from Wellfound."
         self.error = False
         self.filters = {"country": "India", "keyword": "", "remote_only": "false", "company_size": "", "employment_type": "", "limit": "30"}
@@ -56,50 +48,31 @@ class WorkflowState:
 state = WorkflowState()
 
 
-def is_trusted_loopback_origin(origin: str | None) -> bool:
-    """Allow only loopback HTTP origins so the dashboard stays local-only."""
-    if not origin:
-        return False
-
-    try:
-        hostname = urlsplit(origin).hostname
-    except ValueError:
-        return False
-
-    if not hostname:
-        return False
-
-    hostname = hostname.lower().rstrip(".")
-    if hostname == "localhost":
-        return True
-
-    try:
-        return ipaddress.ip_address(hostname).is_loopback
-    except ValueError:
-        return False
-
-
-def verify_csrf(request: Request, csrf_token: str) -> None:
-    """Reject dashboard POSTs that do not originate from this local server."""
-    origin = request.headers.get("origin") or request.headers.get("referer")
-    if (
-        not is_trusted_loopback_origin(origin)
-        or not hmac.compare_digest(csrf_token, CSRF_TOKEN)
-    ):
-        raise HTTPException(status_code=403, detail="Invalid CSRF token or origin.")
-
-
 def load_configuration() -> dict[str, str]:
     load_dotenv(ENV_FILE, override=True)
     return {
         "api_key": os.getenv("API_KEY", ""),
         "profile_path": os.getenv("PROFILE_PATH", ""),
         "resume_path": os.getenv("RESUME_PATH", ""),
+        "application_phone": os.getenv("APPLICATION_PHONE", ""),
+        "application_referred": os.getenv("APPLICATION_REFERRED", ""),
+        "application_referral_details": os.getenv("APPLICATION_REFERRAL_DETAILS", ""),
+        "application_visa_sponsorship": os.getenv("APPLICATION_VISA_SPONSORSHIP", ""),
+        "application_relocation": os.getenv("APPLICATION_RELOCATION", ""),
         "auto_submit": os.getenv("AUTO_SUBMIT", "false").lower() == "true",
     }
 
 
-def save_configuration(api_key: str, profile_path: str, resume_path: str) -> None:
+def save_configuration(
+    api_key: str,
+    profile_path: str,
+    resume_path: str,
+    application_phone: str = "",
+    application_referred: str = "",
+    application_referral_details: str = "",
+    application_visa_sponsorship: str = "",
+    application_relocation: str = "",
+) -> None:
     """Persist only local settings; a blank API-key field preserves the old key."""
     ENV_FILE.touch(exist_ok=True)
     if api_key.strip():
@@ -111,6 +84,16 @@ def save_configuration(api_key: str, profile_path: str, resume_path: str) -> Non
     if resume_path.strip():
         set_key(str(ENV_FILE), "RESUME_PATH", resume_path.strip())
         os.environ["RESUME_PATH"] = resume_path.strip()
+    application_profile = {
+        "APPLICATION_PHONE": application_phone.strip(),
+        "APPLICATION_REFERRED": application_referred.strip(),
+        "APPLICATION_REFERRAL_DETAILS": application_referral_details.strip(),
+        "APPLICATION_VISA_SPONSORSHIP": application_visa_sponsorship.strip(),
+        "APPLICATION_RELOCATION": application_relocation.strip(),
+    }
+    for key, value in application_profile.items():
+        set_key(str(ENV_FILE), key, value)
+        os.environ[key] = value
     if not os.getenv("AUTO_SUBMIT"):
         set_key(str(ENV_FILE), "AUTO_SUBMIT", "false")
         os.environ["AUTO_SUBMIT"] = "false"
@@ -147,10 +130,10 @@ def scrape_jobs_in_background(config: dict[str, str], filters: dict[str, str]) -
             jobs = [{**job, "id": str(index)} for index, job in enumerate(scraper.data)]
             with state.lock:
                 state.jobs = jobs
-                state.drafts = []
+                state.submitted_job_links.clear()
                 state.message = (
-                    f"Imported {len(jobs)} job listings with descriptions."
-                    f"{scraper.scrape_warning} Select roles to create drafts."
+                    f"Imported {len(jobs)} Wellfound job cards. Open listings to review full descriptions."
+                    f"{scraper.scrape_warning} Select roles to generate and submit applications."
                 )
                 state.error = False
         finally:
@@ -162,33 +145,62 @@ def scrape_jobs_in_background(config: dict[str, str], filters: dict[str, str]) -
             state.is_running = False
 
 
-def create_drafts_in_background(jobs: list[dict[str, str]], config: dict[str, str]) -> None:
-    """Generate local drafts and update the dashboard when the work completes."""
+def submit_applications_in_background(
+    config: dict[str, str],
+    selected_jobs: list[dict[str, str]],
+) -> None:
+    processor = None
     try:
-        generator = CoverLetterGenerator(
+        processor = Gotolink(
+            auto_submit=True,
             api_key=config["api_key"],
             resume_path=config["resume_path"],
+            excel_path=str(PROJECT_ROOT / "job_applications.xlsx"),
+            progress_callback=state.set_message,
+            profile_answers={
+                "phone": config["application_phone"],
+                "referred": config["application_referred"],
+                "referral_details": config["application_referral_details"],
+                "visa_sponsorship": config["application_visa_sponsorship"],
+                "relocation": config["application_relocation"],
+            },
         )
-        workbook = ExcelHandler(str(PROJECT_ROOT / "job_applications.xlsx"))
-        drafts, failures = create_drafts(jobs, generator, workbook)
+        results = processor.process_selected_jobs(selected_jobs)
+        submitted = sum(was_submitted for _, was_submitted, _ in results)
+        failures = [
+            (link, error)
+            for link, _, error in results
+            if error is not None
+        ]
         with state.lock:
-            state.drafts = drafts
-            if drafts:
-                state.message = (
-                    f"Created {len(drafts)} cover-letter draft(s) and saved them to "
-                    "job_applications.xlsx. No applications were submitted."
-                )
-                state.error = False
-            else:
-                state.message = "Could not create any cover-letter drafts. " + " ".join(failures[:3])
-                state.error = True
-            if failures and drafts:
-                state.message += f" Skipped {len(failures)} role(s) that could not be drafted."
+            state.submitted_job_links.update(
+                link for link, was_submitted, _ in results if was_submitted
+            )
+        message = f"Confirmed submission of {submitted} of {len(results)} selected application(s)."
+        if failures:
+            details = "; ".join(f"{link}: {error}" for link, error in failures[:3])
+            message += f" Failed: {details}"
+        state.set_message(message, error=bool(failures))
     except Exception as exc:
-        state.set_message(f"Could not create cover-letter drafts: {exc}", error=True)
+        error = str(exc).strip() or type(exc).__name__
+        if processor is None:
+            try:
+                workbook = ExcelHandler(str(PROJECT_ROOT / "job_applications.xlsx"))
+                for job in selected_jobs:
+                    workbook.add_application(
+                        job["link"],
+                        "",
+                        "",
+                        "Failed",
+                        f"Application processing could not start: {error}",
+                    )
+                workbook.save_excel()
+            except Exception as logging_error:
+                error += f"; could not save failure records: {logging_error}"
+        state.set_message(f"Could not submit applications: {error}", error=True)
     finally:
         with state.lock:
-            state.is_drafting = False
+            state.is_running = False
 
 
 def create_app() -> FastAPI:
@@ -199,36 +211,43 @@ def create_app() -> FastAPI:
     def dashboard(request: Request):
         config = load_configuration()
         with state.lock:
-            jobs, drafts = list(state.jobs), list(state.drafts)
-            message, error = state.message, state.error
-            is_running, is_drafting = state.is_running, state.is_drafting
+            jobs, message, error, is_running = list(state.jobs), state.message, state.error, state.is_running
+            submitted_job_links = set(state.submitted_job_links)
         return TEMPLATES.TemplateResponse(request, "index.html", {
-            "config": config, "jobs": jobs, "drafts": drafts, "message": message, "error": error,
+            "config": config, "jobs": jobs, "message": message, "error": error,
             "is_running": is_running, "config_errors": configuration_errors(config), "filters": state.filters,
-            "is_drafting": is_drafting,
-            "csrf_token": CSRF_TOKEN,
+            "submitted_job_links": submitted_job_links,
         })
 
     @app.post("/settings")
     def update_settings(
-        request: Request,
-        csrf_token: str = Form(""),
         api_key: str = Form(""),
         profile_path: str = Form(""),
         resume_path: str = Form(""),
+        application_phone: str = Form(""),
+        application_referred: str = Form(""),
+        application_referral_details: str = Form(""),
+        application_visa_sponsorship: str = Form(""),
+        application_relocation: str = Form(""),
     ):
-        verify_csrf(request, csrf_token)
-        save_configuration(api_key, profile_path, resume_path)
-        state.set_message("Local settings saved. Your API key is never shown in the dashboard.")
+        save_configuration(
+            api_key,
+            profile_path,
+            resume_path,
+            application_phone,
+            application_referred,
+            application_referral_details,
+            application_visa_sponsorship,
+            application_relocation,
+        )
+        state.set_message("Local settings and reusable application answers saved.")
         return RedirectResponse(url="/", status_code=303)
 
     @app.post("/jobs/import")
     def import_jobs(
-        request: Request, csrf_token: str = Form(""),
         country: str = Form("India"), keyword: str = Form(""), remote_only: str = Form("false"),
         company_size: str = Form(""), employment_type: str = Form(""), limit: str = Form("30"),
     ):
-        verify_csrf(request, csrf_token)
         config = load_configuration()
         errors = profile_configuration_errors(config)
         if errors:
@@ -247,36 +266,37 @@ def create_app() -> FastAPI:
         threading.Thread(target=scrape_jobs_in_background, args=(config, filters), daemon=True).start()
         return RedirectResponse(url="/", status_code=303)
 
-    @app.post("/applications/draft")
-    def draft_applications(
-        request: Request,
-        csrf_token: str = Form(""),
-        job_ids: list[str] = Form(default=[]),
-    ):
-        verify_csrf(request, csrf_token)
+    @app.post("/applications/submit")
+    def submit_applications(job_ids: list[str] = Form(default=[])):
+        config = load_configuration()
+        errors = configuration_errors(config)
+        if errors:
+            state.set_message(" ".join(errors), error=True)
+            return RedirectResponse(url="/", status_code=303)
+
         selected = set(job_ids)
         with state.lock:
-            selected_jobs = [job for job in state.jobs if job["id"] in selected]
-        if not selected_jobs:
-            state.set_message("Select at least one job before drafting applications.", error=True)
-        else:
-            config = load_configuration()
-            errors = configuration_errors(config)
-            if errors:
-                state.set_message(" ".join(errors), error=True)
+            if state.is_running:
+                state.message = "Another import or application submission is already in progress."
                 return RedirectResponse(url="/", status_code=303)
-            with state.lock:
-                if state.is_drafting:
-                    state.message = "Cover-letter drafting is already in progress."
-                    return RedirectResponse(url="/", status_code=303)
-                state.is_drafting = True
-                state.error = False
-                state.message = f"Creating cover-letter drafts for {len(selected_jobs)} role(s)…"
-            threading.Thread(
-                target=create_drafts_in_background,
-                args=(selected_jobs, config),
-                daemon=True,
-            ).start()
+            selected_jobs = [
+                job for job in state.jobs
+                if job["id"] in selected and job["link"] not in state.submitted_job_links
+            ]
+            if not selected_jobs:
+                state.message = "Select at least one job before submitting applications."
+                state.error = True
+                return RedirectResponse(url="/", status_code=303)
+            state.is_running = True
+            state.error = False
+            state.message = (
+                f"Generating cover letters and submitting {len(selected_jobs)} application(s)…"
+            )
+        threading.Thread(
+            target=submit_applications_in_background,
+            args=(config, selected_jobs),
+            daemon=True,
+        ).start()
         return RedirectResponse(url="/", status_code=303)
 
     return app

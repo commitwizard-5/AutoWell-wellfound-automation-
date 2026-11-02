@@ -1,1 +1,0 @@
-"""Autoply test package."""
