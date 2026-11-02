@@ -30,7 +30,7 @@ class CoverLetterGenerator:
         self.pdf_handler = PDFHandler(self.resume_path)
 
     def generate_cover_letter(self, job_description: str) -> str:
-        """Generate a letter by sending résumé content and the job description to Gemini."""
+        """Generate a letter by sending resume content and the job description to Gemini."""
 
         resume_text, project_links = self._resume_context()
 
@@ -153,7 +153,7 @@ Questions:
         except FileNotFoundError as error:
             raise ValueError(f"Resume file was not found: {self.resume_path}") from error
         if not resume_text.strip():
-            raise ValueError("No readable text was found in the résumé PDF.")
+            raise ValueError("No readable text was found in the resume PDF.")
         return resume_text, str(project_links)
 
     def _generate_content(self, prompt: str, config):

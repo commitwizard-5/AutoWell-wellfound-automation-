@@ -1,7 +1,7 @@
 """Local FastAPI interface for the Autoply workflow.
 
 The server intentionally binds to localhost only. Cover-letter generation
-sends extracted résumé text, résumé links, and the job description to the
+sends extracted resume text, resume links, and the job description to the
 Google Gemini API. Review Google's current data-handling terms before use.
 """
 
@@ -116,9 +116,9 @@ def configuration_errors(config: dict[str, str]) -> list[str]:
     errors.extend(profile_configuration_errors(config))
     resume_path = config["resume_path"]
     if not resume_path:
-        errors.append("Add a résumé path.")
+        errors.append("Add a resume path.")
     elif not Path(resume_path).exists():
-        errors.append(f"Résumé path was not found: {resume_path}")
+        errors.append(f"Resume path was not found: {resume_path}")
     return errors
 
 

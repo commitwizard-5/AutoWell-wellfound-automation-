@@ -500,7 +500,7 @@ class Gotolink:
             if unanswered:
                 questions = "; ".join(unanswered[:5])
                 raise RuntimeError(
-                    "Could not enter answers for required questions from the saved profile or résumé: "
+                    "Could not enter answers for required questions from the saved profile or resume: "
                     f"{questions}"
                 )
             if self.auto_submit:
