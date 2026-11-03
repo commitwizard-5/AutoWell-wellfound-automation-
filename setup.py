@@ -6,8 +6,8 @@ setup(
     description='A local-first AI job application workflow assistant.',
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
-    author='Anupam Maurya, Chaitanya Anand',
-    author_email='anupammaurya981@gmail.com',
+    author='Ashmit Gautam',
+    author_email='ashmitgautam788@gmail.com',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
