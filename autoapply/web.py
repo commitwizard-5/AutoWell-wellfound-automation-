@@ -1,4 +1,4 @@
-"""Local FastAPI interface for the Autoply workflow.
+"""Local FastAPI interface for the Autowell workflow.
 
 The server intentionally binds to localhost only. Cover-letter generation
 sends extracted resume text, resume links, and the job description to the
@@ -28,13 +28,13 @@ TEMPLATES = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
 
 
 class WorkflowState:
-    """Small in-memory state store for one local Autoply session."""
+    """Small in-memory state store for one local Autowell session."""
 
     def __init__(self) -> None:
         self.jobs: list[dict[str, str]] = []
         self.submitted_job_links: set[str] = set()
         self.is_running = False
-        self.message = "Configure Autoply, then import jobs from Wellfound."
+        self.message = "Configure Autowell, then import jobs from Wellfound."
         self.error = False
         self.filters = {"country": "India", "keyword": "", "remote_only": "false", "company_size": "", "employment_type": "", "limit": "30"}
         self.lock = threading.Lock()
@@ -204,7 +204,7 @@ def submit_applications_in_background(
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Autoply", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Autowell", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "static")), name="static")
 
     @app.get("/")

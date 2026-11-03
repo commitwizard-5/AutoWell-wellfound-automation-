@@ -1,4 +1,4 @@
-"""Start Autoply's local-only web dashboard."""
+"""Start Autowell's local-only web dashboard."""
 
 from autoapply.web import run
 

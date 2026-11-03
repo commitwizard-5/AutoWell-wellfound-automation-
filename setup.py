@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='autoply',
+    name='autowell',
     version='1.0.1',
     description='A local-first AI job application workflow assistant.',
     long_description=open('README.md', encoding='utf-8').read(),

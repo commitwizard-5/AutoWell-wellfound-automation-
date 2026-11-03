@@ -165,7 +165,7 @@ class Gotolink:
             return groups.map((group, index) => {
               const first = group.nodes[0];
               const id = String(index);
-              for (const node of group.nodes) node.setAttribute('data-autoply-question-id', id);
+              for (const node of group.nodes) node.setAttribute('data-autowell-question-id', id);
               const labels = node => [
                 ...Array.from(node.labels || []).map(label => label.innerText),
                 node.getAttribute('aria-label') || '',
@@ -304,7 +304,7 @@ class Gotolink:
                     unanswered.append(prompt)
                 continue
 
-            selector = f'[data-autoply-question-id="{question_id}"]'
+            selector = f'[data-autowell-question-id="{question_id}"]'
             elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
             if not elements:
                 if question["required"]:
