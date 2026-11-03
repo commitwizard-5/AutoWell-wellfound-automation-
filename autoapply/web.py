@@ -7,12 +7,14 @@ Google Gemini API. Review Google's current data-handling terms before use.
 
 from __future__ import annotations
 
+import hmac
 import os
+import secrets
 import threading
 from pathlib import Path
 
 from dotenv import load_dotenv, set_key
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -25,6 +27,7 @@ from autoapply.helper.gotolink import Gotolink
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = PROJECT_ROOT / ".env"
 TEMPLATES = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
+CSRF_COOKIE_NAME = "autowell_csrf"
 
 
 class WorkflowState:
@@ -122,6 +125,14 @@ def configuration_errors(config: dict[str, str]) -> list[str]:
     return errors
 
 
+def validate_csrf_token(request: Request, submitted_token: str) -> None:
+    cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
+    if not cookie_token or not submitted_token or not hmac.compare_digest(
+        cookie_token, submitted_token
+    ):
+        raise HTTPException(status_code=403, detail="Invalid or missing CSRF token.")
+
+
 def scrape_jobs_in_background(config: dict[str, str], filters: dict[str, str]) -> None:
     try:
         scraper = JobScraper(profile_path=config["profile_path"], progress_callback=state.set_message)
@@ -210,17 +221,30 @@ def create_app() -> FastAPI:
     @app.get("/")
     def dashboard(request: Request):
         config = load_configuration()
+        csrf_token = request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe(32)
         with state.lock:
             jobs, message, error, is_running = list(state.jobs), state.message, state.error, state.is_running
             submitted_job_links = set(state.submitted_job_links)
-        return TEMPLATES.TemplateResponse(request, "index.html", {
+        response = TEMPLATES.TemplateResponse(request, "index.html", {
             "config": config, "jobs": jobs, "message": message, "error": error,
             "is_running": is_running, "config_errors": configuration_errors(config), "filters": state.filters,
-            "submitted_job_links": submitted_job_links,
+            "submitted_job_links": submitted_job_links, "csrf_token": csrf_token,
         })
+        response.set_cookie(
+            CSRF_COOKIE_NAME,
+            csrf_token,
+            httponly=True,
+            secure=request.url.scheme == "https",
+            samesite="strict",
+            max_age=43200,
+            path="/",
+        )
+        return response
 
     @app.post("/settings")
     def update_settings(
+        request: Request,
+        csrf_token: str = Form(""),
         api_key: str = Form(""),
         profile_path: str = Form(""),
         resume_path: str = Form(""),
@@ -230,6 +254,7 @@ def create_app() -> FastAPI:
         application_visa_sponsorship: str = Form(""),
         application_relocation: str = Form(""),
     ):
+        validate_csrf_token(request, csrf_token)
         save_configuration(
             api_key,
             profile_path,
@@ -245,9 +270,12 @@ def create_app() -> FastAPI:
 
     @app.post("/jobs/import")
     def import_jobs(
+        request: Request,
+        csrf_token: str = Form(""),
         country: str = Form("India"), keyword: str = Form(""), remote_only: str = Form("false"),
         company_size: str = Form(""), employment_type: str = Form(""), limit: str = Form("30"),
     ):
+        validate_csrf_token(request, csrf_token)
         config = load_configuration()
         errors = profile_configuration_errors(config)
         if errors:
@@ -267,7 +295,12 @@ def create_app() -> FastAPI:
         return RedirectResponse(url="/", status_code=303)
 
     @app.post("/applications/submit")
-    def submit_applications(job_ids: list[str] = Form(default=[])):
+    def submit_applications(
+        request: Request,
+        csrf_token: str = Form(""),
+        job_ids: list[str] = Form(default=[]),
+    ):
+        validate_csrf_token(request, csrf_token)
         config = load_configuration()
         errors = configuration_errors(config)
         if errors:

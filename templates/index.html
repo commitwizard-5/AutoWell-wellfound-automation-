@@ -4,64 +4,239 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if is_running %}<meta http-equiv="refresh" content="3">{% endif %}
+    <meta name="theme-color" content="#090b10">
     <title>Autowell | Local AI Job Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
   </head>
   <body>
-    <main class="shell">
+    <main class="shell" id="top">
       <header class="hero">
-        <div>
-          <p class="eyebrow">LOCAL-FIRST JOB WORKFLOW</p>
-          <h1>Autowell</h1>
-          <p class="subtitle">Discover roles, generate resume-grounded applications, and submit the roles you select.</p>
-        </div>
-        <div class="privacy-note"><span>●</span> App runs locally; AI uses Google Gemini</div>
+        <a class="hero-logo" href="#top" aria-label="Autowell home">AUTOWELL<span>.</span></a>
+        <span class="scroll-cue" aria-hidden="true"><span></span></span>
       </header>
-      <section class="notice" aria-label="AI data handling notice">
-        When application generation is used, extracted resume text and links, your saved reusable answers, the job description, and application questions are sent to Google Gemini using your API key. Answers use your saved responses and resume information; any required question still lacking an answer stops submission. Review Google's current terms and use this feature only with the resume owner's consent.
+
+      <section class="intro-section reveal" id="how-it-works" aria-labelledby="guide-title">
+        <div class="section-heading">
+          <p class="eyebrow">YOUR SEARCH, STEP BY STEP</p>
+          <h2 id="guide-title">A better way to move forward.</h2>
+          <p>Scroll through the guide. Each card opens as it comes into focus.</p>
+        </div>
+        <div class="tutorial-stack">
+          <article class="tutorial-card is-current" style="--card-index: 0" aria-current="step">
+            <div class="tutorial-index">01 <span>/ 04</span></div>
+            <div class="tutorial-content">
+              <p class="eyebrow">FIRST, MAKE IT YOURS</p>
+              <h3>Set up your profile.</h3>
+              <div class="instruction-copy">
+                <p>Add your Gemini API key, Firefox profile folder, and resume PDF in Local settings. Add truthful reusable answers for recurring application questions, then save.</p>
+                <p>Your key and profile answers are stored in the project's local <code>.env</code> file. Leave the key field blank later to keep the saved key.</p>
+              </div>
+              <a class="tutorial-link" href="#workspace">Go to local settings <span aria-hidden="true">↓</span></a>
+            </div>
+            <span class="tutorial-orbit" aria-hidden="true"></span>
+          </article>
+          <article class="tutorial-card" style="--card-index: 1">
+            <div class="tutorial-index">02 <span>/ 04</span></div>
+            <div class="tutorial-content">
+              <p class="eyebrow">MAKE THE SEARCH YOURS</p>
+              <h3>Find roles that fit.</h3>
+              <div class="instruction-copy">
+                <p>Set a country, title keywords, company size, employment type, and remote preference. Autowell applies the available filters on Wellfound and imports matching job cards.</p>
+                <p>If a Wellfound filter is unavailable, the import can continue and report which condition it could not apply.</p>
+              </div>
+              <a class="tutorial-link" href="#workspace">Go to job search <span aria-hidden="true">↓</span></a>
+            </div>
+            <span class="tutorial-orbit" aria-hidden="true"></span>
+          </article>
+          <article class="tutorial-card" style="--card-index: 2">
+            <div class="tutorial-index">03 <span>/ 04</span></div>
+            <div class="tutorial-content">
+              <p class="eyebrow">YOU ARE IN CONTROL</p>
+              <h3>Review. Then choose.</h3>
+              <div class="instruction-copy">
+                <p>Expand Listing details to read the imported card, or open the original Wellfound listing for more context. Select only the jobs you want to apply for.</p>
+                <p>Clicking Generate &amp; submit sends the selected applications automatically—there is no cover-letter preview. Required questions without a truthful supported answer stop that application.</p>
+              </div>
+              <a class="tutorial-link" href="#shortlist">See your shortlist <span aria-hidden="true">↓</span></a>
+            </div>
+            <span class="tutorial-orbit" aria-hidden="true"></span>
+          </article>
+          <article class="tutorial-card" style="--card-index: 3">
+            <div class="tutorial-index">04 <span>/ 04</span></div>
+            <div class="tutorial-content">
+              <p class="eyebrow">A SMALL BUT IMPORTANT GUARDRAIL</p>
+              <h3>Local actions, protected.</h3>
+              <div class="instruction-copy">
+                <p>Autowell adds a random CSRF token to each form and validates it against a SameSite=Strict cookie. This helps prevent another website from silently triggering settings changes, job imports, or application submissions through your open browser session.</p>
+                <p>It is one layer of protection—not a substitute for keeping your machine and browser secure, or reviewing which jobs you select.</p>
+              </div>
+              <span class="security-badge"><span aria-hidden="true">✓</span> CSRF checks enabled</span>
+            </div>
+            <span class="tutorial-orbit" aria-hidden="true"></span>
+          </article>
+        </div>
       </section>
-      <section class="notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
-      <section class="grid">
-        <article class="panel settings-panel">
-          <div class="panel-heading"><div><p class="eyebrow">STEP 1</p><h2>Local settings</h2></div><span class="pill {{ 'pill-safe' if not config_errors else '' }}">{{ 'Ready' if not config_errors else 'Needs setup' }}</span></div>
+
+      <section class="notice privacy-note reveal" aria-label="AI data handling notice">
+        <span class="notice-mark" aria-hidden="true">i</span>
+        <p><strong>Your data, clearly:</strong> When generating an application, resume text and links, saved answers, the job description, and application questions are sent to Google Gemini using your API key. Required questions without a supported answer stop submission. Use only with the resume owner's consent and review Google's current data-handling terms.</p>
+      </section>
+      <section class="notice status-notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
+
+      <section class="grid" id="workspace">
+        <article class="panel settings-panel reveal">
+          <div class="panel-heading">
+            <div><p class="eyebrow">STEP 1 / YOUR PROFILE</p><h2>Local settings</h2><p class="panel-intro">Keep your application essentials ready in one place.</p></div>
+            <span class="pill {{ 'pill-safe' if not config_errors else '' }}">{{ 'Ready' if not config_errors else 'Needs setup' }}</span>
+          </div>
           <form action="/settings" method="post" class="form-stack">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label>Gemini API key<input name="api_key" type="password" autocomplete="off" placeholder="{{ 'Saved locally — leave blank to keep it' if config.api_key else 'Paste your Gemini API key' }}"></label>
-            <label>Firefox profile path<input name="profile_path" value="{{ config.profile_path }}" placeholder="C:\\Users\\you\\AppData\\Roaming\\Mozilla..."></label>
-            <label>Resume PDF path<input name="resume_path" value="{{ config.resume_path }}" placeholder="C:\\Users\\you\\Documents\\resume.pdf"></label>
-            <p class="eyebrow">REUSABLE APPLICATION ANSWERS</p>
-            <p class="small-text">Saved locally and reused for recurring Wellfound questions. These answers are also sent to Gemini when generating applications. Phone can be extracted from your resume if left blank.</p>
-            <label>Phone number<input name="application_phone" type="tel" value="{{ config.application_phone }}" autocomplete="tel" placeholder="Use the number to put on applications"></label>
+            <label>Firefox profile path<input name="profile_path" value="{{ config.profile_path }}" placeholder="C:\Users\you\AppData\Roaming\Mozilla..."></label>
+            <label>Resume PDF path<input name="resume_path" value="{{ config.resume_path }}" placeholder="C:\Users\you\Documents\resume.pdf"></label>
+            <div class="form-divider"><p class="eyebrow">REUSABLE APPLICATION ANSWERS</p><p class="small-text">Saved locally and reused for recurring Wellfound questions. Answers are also shared with Gemini when generating applications. Phone can be extracted from your resume if left blank.</p></div>
+            <label>Phone number<input name="application_phone" type="tel" value="{{ config.application_phone }}" autocomplete="tel" placeholder="The number to use on applications"></label>
             <label>Were you referred?<select name="application_referred"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_referred == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_referred == 'No' else '' }}>No</option></select></label>
             <label>Referrer name and contact details<textarea name="application_referral_details" rows="3" placeholder="Required only when you were referred">{{ config.application_referral_details }}</textarea></label>
             <label>Will you require visa sponsorship?<select name="application_visa_sponsorship"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_visa_sponsorship == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_visa_sponsorship == 'No' else '' }}>No</option></select></label>
             <label>Are you willing to relocate?<select name="application_relocation"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_relocation == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_relocation == 'No' else '' }}>No</option></select></label>
-            <button type="submit" class="button button-secondary">Save local settings and answers</button>
+            <button type="submit" class="button button-secondary">Save settings and answers <span aria-hidden="true">→</span></button>
           </form>
-          {% if config_errors %}<ul class="errors">{% for item in config_errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="small-text">Selected applications are submitted automatically using Gemini-generated cover letters, without a preview step.</p>{% endif %}
+          {% if config_errors %}<ul class="errors">{% for item in config_errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="small-text setup-footnote">Selected applications are submitted automatically using Gemini-generated cover letters, without a preview step.</p>{% endif %}
         </article>
-        <article class="panel action-panel">
-          <p class="eyebrow">STEP 2</p><h2>Find matching jobs</h2><p>Search and filter directly on Wellfound, then import matching job cards without opening each listing.</p>
+
+        <article class="panel action-panel reveal">
+          <div class="panel-heading">
+            <div><p class="eyebrow">STEP 2 / DISCOVERY</p><h2>Find matching jobs</h2><p class="panel-intro">Filter on Wellfound, then bring the matching cards here.</p></div>
+          </div>
           <form action="/jobs/import" method="post" class="filter-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label>Country<input name="country" value="{{ filters.country }}" list="countries" placeholder="India"></label>
             <datalist id="countries"><option value="India"><option value="United States"><option value="United Kingdom"><option value="Canada"><option value="Germany"><option value="Australia"></datalist>
             <label>Job title keywords<input name="keyword" value="{{ filters.keyword }}" placeholder="Software Engineer"></label>
-            <div class="filter-row"><label>Company size<select name="company_size"><option value="">Any size</option>{% for size in ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001+'] %}<option value="{{ size }}" {{ 'selected' if filters.company_size == size else '' }}>{{ size }} employees</option>{% endfor %}</select></label><label>Employment<select name="employment_type"><option value="">Any type</option><option value="Full-time" {{ 'selected' if filters.employment_type == 'Full-time' else '' }}>Full-time</option><option value="Internship" {{ 'selected' if filters.employment_type == 'Internship' else '' }}>Internship</option><option value="Part-time" {{ 'selected' if filters.employment_type == 'Part-time' else '' }}>Part-time</option></select></label></div>
-            <div class="filter-row"><label>Import limit<select name="limit">{% for amount in ['10','30','50'] %}<option value="{{ amount }}" {{ 'selected' if filters.limit == amount else '' }}>{{ amount }} jobs</option>{% endfor %}</select></label><label class="toggle">Remote only<input type="checkbox" name="remote_only" value="true" {{ 'checked' if filters.remote_only == 'true' else '' }}><span>Only remote roles</span></label></div>
-            <button type="submit" class="button" {{ 'disabled' if is_running else '' }}>{{ 'Importing…' if is_running else 'Search and import jobs' }}</button>
+            <div class="filter-row">
+              <label>Company size<select name="company_size"><option value="">Any size</option>{% for size in ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001+'] %}<option value="{{ size }}" {{ 'selected' if filters.company_size == size else '' }}>{{ size }} employees</option>{% endfor %}</select></label>
+              <label>Employment type<select name="employment_type"><option value="">Any type</option><option value="Full-time" {{ 'selected' if filters.employment_type == 'Full-time' else '' }}>Full-time</option><option value="Internship" {{ 'selected' if filters.employment_type == 'Internship' else '' }}>Internship</option><option value="Part-time" {{ 'selected' if filters.employment_type == 'Part-time' else '' }}>Part-time</option></select></label>
+            </div>
+            <div class="filter-row">
+              <label>Import limit<select name="limit">{% for amount in ['10','30','50'] %}<option value="{{ amount }}" {{ 'selected' if filters.limit == amount else '' }}>{{ amount }} jobs</option>{% endfor %}</select></label>
+              <label class="toggle"><input type="checkbox" name="remote_only" value="true" {{ 'checked' if filters.remote_only == 'true' else '' }}><span>Remote only</span></label>
+            </div>
+            <button type="submit" class="button" {{ 'disabled' if is_running else '' }}>{{ 'Importing…' if is_running else 'Search and import jobs' }} <span aria-hidden="true">→</span></button>
           </form>
-          <div class="safety-card"><strong>Review your selections</strong><span>Only checked jobs are submitted. Clicking the button below sends applications immediately, without reviewing Gemini's generated cover letters.</span></div>
+          <div class="safety-card"><span class="safety-dot" aria-hidden="true"></span><div><strong>Choose deliberately</strong><span>Only checked roles are submitted. Applications are sent immediately; there is no cover-letter preview.</span></div></div>
         </article>
       </section>
-      <section class="panel jobs-panel">
-        <div class="panel-heading"><div><p class="eyebrow">STEP 3</p><h2>Review roles</h2></div><span class="job-count">{{ jobs|length }} imported</span></div>
+
+      <section class="panel jobs-panel reveal" id="shortlist">
+        <div class="panel-heading">
+          <div><p class="eyebrow">STEP 3 / YOUR SHORTLIST</p><h2>Review roles</h2><p class="panel-intro">Check the details, open the original listing, then select roles to apply.</p></div>
+          <span class="job-count">{{ jobs|length }} <span>imported</span></span>
+        </div>
         {% if jobs %}
-        <form action="/applications/submit" method="post"><div class="job-list">
-          {% for job in jobs %}
-          <div class="job-card"><label class="job-select"><input type="checkbox" name="job_ids" value="{{ job.id }}" {{ 'disabled' if job.link in submitted_job_links else '' }}><span class="checkmark"></span><span class="job-main"><strong>{{ job.role }}</strong><span>{{ job.company }}</span>{% if job.link in submitted_job_links %}<span>Already submitted</span>{% endif %}</span></label><span class="job-meta"><span>{{ job.location or 'Location unavailable' }}</span><span>{{ job.stipend or 'Compensation unavailable' }}</span></span><a href="{{ job.link }}" target="_blank" rel="noreferrer">Open ↗</a><details><summary>Listing details</summary><p>{{ job.description }}</p></details></div>
-          {% endfor %}
-        </div><button class="button" type="submit" {{ 'disabled' if is_running or config_errors else '' }}>{{ 'Processing applications…' if is_running else 'Generate & submit selected applications' }}</button></form>
-        {% else %}<div class="empty-state">Your imported roles will appear here for review.</div>{% endif %}
+        <form action="/applications/submit" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="job-list">
+            {% for job in jobs %}
+            <article class="job-card reveal">
+              <label class="job-select">
+                <input type="checkbox" name="job_ids" value="{{ job.id }}" {{ 'disabled' if job.link in submitted_job_links else '' }}>
+                <span class="checkmark" aria-hidden="true"></span>
+                <span class="job-main"><strong>{{ job.role }}</strong><span>{{ job.company }}</span>{% if job.link in submitted_job_links %}<span class="submitted-tag">Already submitted</span>{% endif %}</span>
+              </label>
+              <div class="job-meta"><span>{{ job.location or 'Location unavailable' }}</span><span>{{ job.stipend or 'Compensation unavailable' }}</span></div>
+              <a class="listing-link" href="{{ job.link }}" target="_blank" rel="noreferrer">View listing <span aria-hidden="true">↗</span></a>
+              <details>
+                <summary>Listing details <span aria-hidden="true">＋</span></summary>
+                <div class="description-lines">{% for line in job.description.splitlines() %}{% if line.strip() %}<p>{{ line }}</p>{% endif %}{% endfor %}</div>
+              </details>
+            </article>
+            {% endfor %}
+          </div>
+          <button class="button submit-button" type="submit" {{ 'disabled' if is_running or config_errors else '' }}>{{ 'Processing applications…' if is_running else 'Generate & submit selected applications' }} <span aria-hidden="true">→</span></button>
+        </form>
+        {% else %}
+        <div class="empty-state"><span class="empty-orbit" aria-hidden="true">✳</span><strong>Your shortlist starts here</strong><span>Import roles above and they will appear here with their Wellfound listing details.</span></div>
+        {% endif %}
       </section>
+
+      <footer class="site-footer reveal">
+        <div><a class="footer-brand" href="#top" aria-label="Autowell home">AUTOWELL<span>.</span></a><p>Thoughtful tools for your next opportunity.</p></div>
+        <div class="footer-contact"><span>BUILT BY</span><strong>Ashmit Gautam</strong><span>NIT Jalandhar</span></div>
+        <div class="footer-links"><a href="https://www.linkedin.com/in/ashmit-gautam-nitj/" target="_blank" rel="me noreferrer">LinkedIn <span aria-hidden="true">↗</span></a><a href="mailto:ashmitgautam788@gmail.com">ashmitgautam788@gmail.com</a></div>
+      </footer>
     </main>
+    <script>
+      (() => {
+        const scrollKey = "autowell:restore-scroll";
+        const restoreScroll = sessionStorage.getItem(scrollKey);
+        if (restoreScroll !== null) {
+          sessionStorage.removeItem(scrollKey);
+          requestAnimationFrame(() => window.scrollTo(0, Number(restoreScroll)));
+        }
+
+        window.addEventListener("pagehide", () => {
+          sessionStorage.setItem(scrollKey, String(window.scrollY));
+        });
+
+        const hero = document.querySelector(".hero");
+        const heroLogo = document.querySelector(".hero-logo");
+        const updateHeroLogo = () => {
+          const fadeDistance = Math.max(1, hero.offsetHeight * 0.62);
+          const progress = Math.min(window.scrollY / fadeDistance, 1);
+          heroLogo.style.opacity = String(1 - progress);
+          heroLogo.style.transform = `translateY(${-24 * progress}px) scale(${1 - progress * 0.035})`;
+          heroLogo.style.pointerEvents = progress > 0.95 ? "none" : "auto";
+        };
+        window.addEventListener("scroll", updateHeroLogo, { passive: true });
+        updateHeroLogo();
+
+        const tutorialCards = Array.from(document.querySelectorAll(".tutorial-card"));
+        if ("IntersectionObserver" in window) {
+          const updateActiveCard = () => {
+            const focusLine = window.innerHeight * 0.43;
+            const visibleCards = tutorialCards
+              .map((card) => ({ card, bounds: card.getBoundingClientRect() }))
+              .filter(({ bounds }) => bounds.bottom > 0 && bounds.top < window.innerHeight);
+            if (!visibleCards.length) return;
+            const current = visibleCards.reduce((closest, candidate) =>
+              Math.abs(candidate.bounds.top + candidate.bounds.height / 2 - focusLine)
+                < Math.abs(closest.bounds.top + closest.bounds.height / 2 - focusLine)
+                ? candidate
+                : closest
+            );
+            tutorialCards.forEach((card) => {
+              const active = card === current.card;
+              card.classList.toggle("is-current", active);
+              if (active) card.setAttribute("aria-current", "step");
+              else card.removeAttribute("aria-current");
+            });
+          };
+          const observer = new IntersectionObserver(updateActiveCard, { threshold: [0, 0.2, 0.5, 0.8] });
+          tutorialCards.forEach((card) => observer.observe(card));
+          window.addEventListener("scroll", updateActiveCard, { passive: true });
+          updateActiveCard();
+        }
+
+        const cards = document.querySelectorAll(".reveal");
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+          cards.forEach((card) => card.classList.add("is-visible"));
+          return;
+        }
+        document.documentElement.classList.add("motion-ready");
+        const observer = new IntersectionObserver((entries, currentObserver) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              currentObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08, rootMargin: "0px 0px -28px 0px" });
+        cards.forEach((card, index) => {
+          card.style.setProperty("--reveal-delay", `${Math.min(index % 5, 4) * 70}ms`);
+          observer.observe(card);
+        });
+      })();
+    </script>
   </body>
 </html>

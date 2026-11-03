@@ -1,6 +1,10 @@
 import os
 import json
+import random
 import time
+from collections.abc import Callable
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 from dotenv import load_dotenv
 from google import genai
@@ -11,13 +15,22 @@ from autoapply.helper.pdfhandler import PDFHandler
 load_dotenv()
 
 class CoverLetterGenerator:
-    MAX_GENERATION_ATTEMPTS = 4
+    MAX_GENERATION_ATTEMPTS = 5
     RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+    INITIAL_RETRY_DELAY_SECONDS = 2
+    MAX_RETRY_DELAY_SECONDS = 30
 
-    def __init__(self, model_name="gemini-3.8-flash", api_key=None, resume_path=None):
+    def __init__(
+        self,
+        model_name="gemini-3.8-flash",
+        api_key=None,
+        resume_path=None,
+        progress_callback: Callable[[str], None] | None = None,
+    ):
         self.model_name = model_name
         self.api_key = api_key or os.getenv("API_KEY")
         self.resume_path = resume_path or os.getenv("RESUME_PATH")
+        self.progress_callback = progress_callback
         if not self.api_key:
             raise ValueError("API_KEY is not configured. Add it to .env.")
         if not self.resume_path:
@@ -167,10 +180,90 @@ Questions:
             except errors.APIError as error:
                 if error.code not in self.RETRYABLE_STATUS_CODES:
                     raise
-                if attempt == self.MAX_GENERATION_ATTEMPTS - 1:
+                if error.code == 429 and self._is_quota_exhausted(error):
                     raise RuntimeError(
-                        "Gemini is temporarily unavailable after "
-                        f"{self.MAX_GENERATION_ATTEMPTS} attempts. "
-                        "No application was submitted; try again later."
+                        "Gemini rejected the request because the API quota or billing "
+                        "limit appears to be exhausted. Check the API key's project, "
+                        "quota, and billing in Google AI Studio/Google Cloud. No "
+                        "application was submitted."
                     ) from error
-                time.sleep(2 ** (attempt + 1))
+                if attempt == self.MAX_GENERATION_ATTEMPTS - 1:
+                    reason = self._provider_error_summary(error)
+                    raise RuntimeError(
+                        f"Gemini remained unavailable after {self.MAX_GENERATION_ATTEMPTS} "
+                        f"attempts ({reason}). This is usually provider load or a "
+                        "temporary rate limit, not a problem with the job or resume. "
+                        "No application was submitted. Wait a minute and retry; if it "
+                        "keeps happening, check Google AI Studio's service status and "
+                        "the API key project's quota."
+                    ) from error
+                delay = self._retry_delay(error, attempt)
+                self._report(
+                    f"Gemini is temporarily busy ({self._provider_error_summary(error)}). "
+                    f"Retrying in about {round(delay)} seconds "
+                    f"({attempt + 2}/{self.MAX_GENERATION_ATTEMPTS})…"
+                )
+                time.sleep(delay)
+
+    @classmethod
+    def _retry_delay(cls, error: errors.APIError, attempt: int) -> float:
+        retry_after = cls._retry_after_seconds(error)
+        if retry_after is not None:
+            return min(retry_after, cls.MAX_RETRY_DELAY_SECONDS)
+        base_delay = min(
+            cls.INITIAL_RETRY_DELAY_SECONDS * (2**attempt),
+            cls.MAX_RETRY_DELAY_SECONDS,
+        )
+        return min(
+            base_delay + random.uniform(0, base_delay * 0.25),
+            cls.MAX_RETRY_DELAY_SECONDS,
+        )
+
+    @staticmethod
+    def _retry_after_seconds(error: errors.APIError) -> float | None:
+        response = getattr(error, "response", None)
+        headers = getattr(response, "headers", None)
+        if not headers:
+            return None
+        retry_after = headers.get("Retry-After")
+        if not retry_after:
+            return None
+        try:
+            return max(0.0, float(retry_after))
+        except (TypeError, ValueError):
+            try:
+                retry_time = parsedate_to_datetime(retry_after)
+                if retry_time.tzinfo is None:
+                    retry_time = retry_time.replace(tzinfo=timezone.utc)
+                return max(
+                    0.0,
+                    (retry_time - datetime.now(timezone.utc)).total_seconds(),
+                )
+            except (TypeError, ValueError, OverflowError):
+                return None
+
+    @staticmethod
+    def _is_quota_exhausted(error: errors.APIError) -> bool:
+        details = f"{error.message or ''} {error.details}".casefold()
+        return any(
+            marker in details
+            for marker in (
+                "exceeded your current quota",
+                "quota exceeded",
+                "quota has been exceeded",
+                "billing",
+                "limit: 0",
+            )
+        )
+
+    @staticmethod
+    def _provider_error_summary(error: errors.APIError) -> str:
+        status = error.status or "API error"
+        message = " ".join((error.message or "").split())
+        if len(message) > 180:
+            message = f"{message[:177]}..."
+        return f"HTTP {error.code} {status}" + (f": {message}" if message else "")
+
+    def _report(self, message: str) -> None:
+        if self.progress_callback:
+            self.progress_callback(message)

@@ -41,6 +41,7 @@ class Gotolink:
         self.cover_letter_generator = CoverLetterGenerator(
             api_key=api_key,
             resume_path=resume_path,
+            progress_callback=progress_callback,
         )
         self.progress_callback = progress_callback
         self.profile_answers = profile_answers or {}
