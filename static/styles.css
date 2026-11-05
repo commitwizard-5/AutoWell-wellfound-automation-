@@ -424,6 +424,13 @@ label {
   font-weight: 650;
 }
 
+.optional-label {
+  margin-left: 5px;
+  color: var(--soft);
+  font-size: 0.67rem;
+  font-weight: 550;
+}
+
 input,
 textarea,
 select {

@@ -25,6 +25,7 @@ class Gotolink:
         *,
         auto_submit=None,
         api_key=None,
+        deepseek_api_key=None,
         resume_path=None,
         excel_path="job_applications.xlsx",
         progress_callback: Callable[[str], None] | None = None,
@@ -40,11 +41,13 @@ class Gotolink:
         self.excel_handler = ExcelHandler(excel_path)
         self.cover_letter_generator = CoverLetterGenerator(
             api_key=api_key,
+            deepseek_api_key=deepseek_api_key,
             resume_path=resume_path,
             progress_callback=progress_callback,
         )
         self.progress_callback = progress_callback
         self.profile_answers = profile_answers or {}
+        self.generation_provider_counts: dict[str, int] = {}
         self.auto_submit = (
             os.getenv("AUTO_SUBMIT", "false").strip().lower() == "true"
             if auto_submit is None
@@ -250,7 +253,7 @@ class Gotolink:
         questions = self._application_questions()
         if not questions:
             return []
-        resume_text = self.cover_letter_generator.pdf_handler.extract_text()
+        resume_text = self.cover_letter_generator.get_resume_text()
         answers = self.cover_letter_generator.answer_application_questions(
             description,
             questions,
@@ -484,17 +487,37 @@ class Gotolink:
                 "submission was not confirmed."
             )
 
-    def process_link(self, link: str) -> tuple[bool, str | None]:
+    def process_link(
+        self,
+        link: str,
+        job: dict[str, str] | None = None,
+    ) -> tuple[bool, str | None]:
         description = ""
         cover_letter = ""
+        provider_used = ""
         status = "Failed"
         error_message = ""
         try:
             self.driver.get(link)
             description = self._job_description()
-            cover_letter = self.cover_letter_generator.generate_cover_letter(
-                job_description=description,
+            generation = self.cover_letter_generator.generate_cover_letter_result(
+                {
+                    "role": (job or {}).get("role", ""),
+                    "company": (job or {}).get("company", ""),
+                    "description": description,
+                }
             )
+            cover_letter = generation["cover_letter"]
+            provider_used = generation["provider_used"]
+            self.generation_provider_counts[provider_used] = (
+                self.generation_provider_counts.get(provider_used, 0) + 1
+            )
+            if provider_used == "template":
+                self._report(
+                    "AI providers were unavailable; using the built-in cover-letter template."
+                )
+            else:
+                self._report(f"Cover letter generated with {provider_used.title()}.")
             self._click_apply()
             self._wait_for_cover_letter_field().send_keys(cover_letter)
             unanswered = self._answer_application_questions(description)
@@ -519,6 +542,7 @@ class Gotolink:
                 cover_letter,
                 status,
                 error_message,
+                provider_used,
             )
             self.excel_handler.save_excel()
         except Exception as error:
@@ -541,7 +565,7 @@ class Gotolink:
             for index, job in enumerate(jobs, start=1):
                 link = job["link"]
                 self._report(f"Processing application {index} of {total}: {job.get('role', link)}")
-                submitted, error = self.process_link(link)
+                submitted, error = self.process_link(link, job)
                 results.append((link, submitted, error))
         finally:
             self.driver.quit()

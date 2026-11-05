@@ -1,9 +1,4 @@
-"""Local FastAPI interface for the Autowell workflow.
-
-The server intentionally binds to localhost only. Cover-letter generation
-sends extracted resume text, resume links, and the job description to the
-Google Gemini API. Review Google's current data-handling terms before use.
-"""
+"""Local FastAPI interface for the Autowell workflow."""
 
 from __future__ import annotations
 
@@ -54,7 +49,8 @@ state = WorkflowState()
 def load_configuration() -> dict[str, str]:
     load_dotenv(ENV_FILE, override=True)
     return {
-        "api_key": os.getenv("API_KEY", ""),
+        "api_key": os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY", ""),
+        "deepseek_api_key": os.getenv("DEEPSEEK_API_KEY", ""),
         "profile_path": os.getenv("PROFILE_PATH", ""),
         "resume_path": os.getenv("RESUME_PATH", ""),
         "application_phone": os.getenv("APPLICATION_PHONE", ""),
@@ -75,12 +71,16 @@ def save_configuration(
     application_referral_details: str = "",
     application_visa_sponsorship: str = "",
     application_relocation: str = "",
+    deepseek_api_key: str = "",
 ) -> None:
-    """Persist only local settings; a blank API-key field preserves the old key."""
+    """Persist local settings; blank provider-key fields preserve existing keys."""
     ENV_FILE.touch(exist_ok=True)
     if api_key.strip():
-        set_key(str(ENV_FILE), "API_KEY", api_key.strip())
-        os.environ["API_KEY"] = api_key.strip()
+        set_key(str(ENV_FILE), "GEMINI_API_KEY", api_key.strip())
+        os.environ["GEMINI_API_KEY"] = api_key.strip()
+    if deepseek_api_key.strip():
+        set_key(str(ENV_FILE), "DEEPSEEK_API_KEY", deepseek_api_key.strip())
+        os.environ["DEEPSEEK_API_KEY"] = deepseek_api_key.strip()
     if profile_path.strip():
         set_key(str(ENV_FILE), "PROFILE_PATH", profile_path.strip())
         os.environ["PROFILE_PATH"] = profile_path.strip()
@@ -114,14 +114,7 @@ def profile_configuration_errors(config: dict[str, str]) -> list[str]:
 
 def configuration_errors(config: dict[str, str]) -> list[str]:
     errors = []
-    if not config["api_key"]:
-        errors.append("Add a Gemini API key.")
     errors.extend(profile_configuration_errors(config))
-    resume_path = config["resume_path"]
-    if not resume_path:
-        errors.append("Add a resume path.")
-    elif not Path(resume_path).exists():
-        errors.append(f"Resume path was not found: {resume_path}")
     return errors
 
 
@@ -165,6 +158,7 @@ def submit_applications_in_background(
         processor = Gotolink(
             auto_submit=True,
             api_key=config["api_key"],
+            deepseek_api_key=config["deepseek_api_key"],
             resume_path=config["resume_path"],
             excel_path=str(PROJECT_ROOT / "job_applications.xlsx"),
             progress_callback=state.set_message,
@@ -188,6 +182,17 @@ def submit_applications_in_background(
                 link for link, was_submitted, _ in results if was_submitted
             )
         message = f"Confirmed submission of {submitted} of {len(results)} selected application(s)."
+        provider_labels = {
+            "gemini": "Gemini",
+            "deepseek": "DeepSeek",
+            "template": "built-in template",
+        }
+        provider_summary = ", ".join(
+            f"{count} {provider_labels.get(provider, provider)}"
+            for provider, count in processor.generation_provider_counts.items()
+        )
+        if provider_summary:
+            message += f" Cover letters: {provider_summary}."
         if failures:
             details = "; ".join(f"{link}: {error}" for link, error in failures[:3])
             message += f" Failed: {details}"
@@ -253,6 +258,7 @@ def create_app() -> FastAPI:
         application_referral_details: str = Form(""),
         application_visa_sponsorship: str = Form(""),
         application_relocation: str = Form(""),
+        deepseek_api_key: str = Form(""),
     ):
         validate_csrf_token(request, csrf_token)
         save_configuration(
@@ -264,6 +270,7 @@ def create_app() -> FastAPI:
             application_referral_details,
             application_visa_sponsorship,
             application_relocation,
+            deepseek_api_key,
         )
         state.set_message("Local settings and reusable application answers saved.")
         return RedirectResponse(url="/", status_code=303)

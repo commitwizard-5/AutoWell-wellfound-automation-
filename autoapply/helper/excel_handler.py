@@ -19,14 +19,21 @@ class ExcelHandler:
                 self.sheet.cell(row=1, column=5, value="Status")
             if self.sheet.cell(row=1, column=6).value != "Error":
                 self.sheet.cell(row=1, column=6, value="Error")
+            if self.sheet.cell(row=1, column=7).value != "Provider":
+                self.sheet.cell(row=1, column=7, value="Provider")
         else:
             self.workbook = Workbook()
             self.sheet = self.workbook.active
-            self.sheet.append(["Date", "Job Link", "Job Description", "Cover Letter", "Status", "Error"])
+            self.sheet.append([
+                "Date", "Job Link", "Job Description", "Cover Letter",
+                "Status", "Error", "Provider",
+            ])
 
-    def add_application(self, link, description, cover_letter, status, error=""):
+    def add_application(self, link, description, cover_letter, status, error="", provider=""):
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.sheet.append([current_date, link, description, cover_letter, status, error])
+        self.sheet.append([
+            current_date, link, description, cover_letter, status, error, provider,
+        ])
         
 
     def save_excel(self):

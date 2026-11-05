@@ -28,7 +28,7 @@
               <p class="eyebrow">FIRST, MAKE IT YOURS</p>
               <h3>Set up your profile.</h3>
               <div class="instruction-copy">
-                <p>Add your Gemini API key, Firefox profile folder, and resume PDF in Local settings. Add truthful reusable answers for recurring application questions, then save.</p>
+                <p>Add your Firefox profile folder and, if available, your resume PDF. Gemini and DeepSeek keys are optional. Add truthful reusable answers for recurring application questions, then save.</p>
                 <p>Your key and profile answers are stored in the project's local <code>.env</code> file. Leave the key field blank later to keep the saved key.</p>
               </div>
               <a class="tutorial-link" href="#workspace">Go to local settings <span aria-hidden="true">↓</span></a>
@@ -79,7 +79,7 @@
 
       <section class="notice privacy-note reveal" aria-label="AI data handling notice">
         <span class="notice-mark" aria-hidden="true">i</span>
-        <p><strong>Your data, clearly:</strong> When generating an application, resume text and links, saved answers, the job description, and application questions are sent to Google Gemini using your API key. Required questions without a supported answer stop submission. Use only with the resume owner's consent and review Google's current data-handling terms.</p>
+        <p><strong>Your data, clearly:</strong> When AI generation is configured, resume text and links, saved answers, the job description, and application questions may be sent to Google Gemini or DeepSeek using your API key. If both are unavailable, cover letters use a local resume-grounded template. Required questions without a supported answer stop submission. Use only with the resume owner's consent and review each provider's data-handling terms.</p>
       </section>
       <section class="notice status-notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
 
@@ -91,10 +91,11 @@
           </div>
           <form action="/settings" method="post" class="form-stack">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <label>Gemini API key<input name="api_key" type="password" autocomplete="off" placeholder="{{ 'Saved locally — leave blank to keep it' if config.api_key else 'Paste your Gemini API key' }}"></label>
+            <label>Gemini API key <span class="optional-label">optional</span><input name="api_key" type="password" autocomplete="off" placeholder="{{ 'Saved locally — leave blank to keep it' if config.api_key else 'Paste your Gemini API key' }}"></label>
+            <label>DeepSeek API key <span class="optional-label">optional fallback</span><input name="deepseek_api_key" type="password" autocomplete="off" placeholder="{{ 'Saved locally — leave blank to keep it' if config.deepseek_api_key else 'Paste your DeepSeek API key' }}"></label>
             <label>Firefox profile path<input name="profile_path" value="{{ config.profile_path }}" placeholder="C:\Users\you\AppData\Roaming\Mozilla..."></label>
             <label>Resume PDF path<input name="resume_path" value="{{ config.resume_path }}" placeholder="C:\Users\you\Documents\resume.pdf"></label>
-            <div class="form-divider"><p class="eyebrow">REUSABLE APPLICATION ANSWERS</p><p class="small-text">Saved locally and reused for recurring Wellfound questions. Answers are also shared with Gemini when generating applications. Phone can be extracted from your resume if left blank.</p></div>
+            <div class="form-divider"><p class="eyebrow">REUSABLE APPLICATION ANSWERS</p><p class="small-text">Saved locally and reused for recurring Wellfound questions. Answers may be shared with the configured AI provider when generating applications. Phone can be extracted from your resume if left blank.</p></div>
             <label>Phone number<input name="application_phone" type="tel" value="{{ config.application_phone }}" autocomplete="tel" placeholder="The number to use on applications"></label>
             <label>Were you referred?<select name="application_referred"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_referred == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_referred == 'No' else '' }}>No</option></select></label>
             <label>Referrer name and contact details<textarea name="application_referral_details" rows="3" placeholder="Required only when you were referred">{{ config.application_referral_details }}</textarea></label>
@@ -102,7 +103,7 @@
             <label>Are you willing to relocate?<select name="application_relocation"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_relocation == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_relocation == 'No' else '' }}>No</option></select></label>
             <button type="submit" class="button button-secondary">Save settings and answers <span aria-hidden="true">→</span></button>
           </form>
-          {% if config_errors %}<ul class="errors">{% for item in config_errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="small-text setup-footnote">Selected applications are submitted automatically using Gemini-generated cover letters, without a preview step.</p>{% endif %}
+          {% if config_errors %}<ul class="errors">{% for item in config_errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="small-text setup-footnote">Gemini is tried first, then optional DeepSeek, then the built-in template. Selected applications are submitted automatically without a cover-letter preview.</p>{% endif %}
         </article>
 
         <article class="panel action-panel reveal">
