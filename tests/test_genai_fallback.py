@@ -222,10 +222,14 @@ class CoverLetterFallbackTests(unittest.TestCase):
         processor.generation_provider_counts = {}
         processor._job_description = Mock(return_value="Build software.")
         processor._click_apply = Mock()
+        processor._wait_for_application_fields = Mock(return_value=[])
+        processor._insert_cover_letter_if_present = Mock(return_value=False)
         field = SimpleNamespace(send_keys=Mock())
         processor._wait_for_cover_letter_field = Mock(return_value=field)
         processor._answer_application_questions = Mock(return_value=[])
+        processor._validate_application_form = Mock(return_value=[])
         processor._submit_application = Mock()
+        processor._advance_application_step = Mock(return_value=False)
         processor._report = Mock()
         with tempfile.TemporaryDirectory() as directory:
             from autoapply.helper.excel_handler import ExcelHandler
@@ -256,10 +260,14 @@ class CoverLetterFallbackTests(unittest.TestCase):
         processor.generation_provider_counts = {}
         processor._job_description = Mock(return_value="Build software.")
         processor._click_apply = Mock()
+        processor._wait_for_application_fields = Mock(return_value=[])
+        processor._insert_cover_letter_if_present = Mock(return_value=False)
         processor._wait_for_cover_letter_field = Mock(
             return_value=SimpleNamespace(send_keys=Mock())
         )
         processor._answer_application_questions = Mock(return_value=[])
+        processor._validate_application_form = Mock(return_value=[])
+        processor._advance_application_step = Mock(return_value=False)
         processor._submit_application = Mock(side_effect=RuntimeError("Wellfound rejected it"))
         processor._report = Mock()
         with tempfile.TemporaryDirectory() as directory:

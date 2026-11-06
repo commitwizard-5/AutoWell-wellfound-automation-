@@ -7,13 +7,24 @@ Autowell is a local-first AI job application workflow assistant. It collects Wel
 1. Create and activate a Python 3.11+ virtual environment.
 2. Install dependencies with `pip install -e .`.
 3. Copy `.env.example` to `.env`. Set your Firefox profile path; a resume path is recommended but optional. Gemini and DeepSeek API keys are optional; without either key Autowell generates cover letters locally from available job and resume information.
-4. Run `python main.py` and open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+4. Autowell looks for geckodriver in `GECKODRIVER_PATH`, `PATH`, its persistent local cache, and the previous `webdriver_manager` cache, in that order. Only if none exists does it download a driver from GitHub; successful downloads are saved under the user's local application cache and reused for later imports. To use a manually installed driver or avoid GitHub entirely, set `GECKODRIVER_PATH` in `.env`, for example:
+
+   ```dotenv
+   GECKODRIVER_PATH=C:/tools/geckodriver.exe
+   ```
+
+   Use the full path to `geckodriver.exe` on Windows. If there is no local or cached driver and GitHub is unavailable on the first run, install geckodriver separately and set this value.
+5. Run `python main.py` and open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 `templates/index.html` is a server-rendered Jinja template, not a standalone page. Its stylesheet can load when the file is opened directly, but template values and dashboard functionality require running `main.py`.
 
 Dashboard forms use a random CSRF token checked against a `SameSite=Strict` cookie, helping prevent other websites from silently triggering local settings changes, job imports, or application submissions in an open browser session.
 
 Cover letters use a three-level provider chain: Gemini (`GEMINI_API_KEY`, with legacy `API_KEY` support), optional DeepSeek (`DEEPSEEK_API_KEY`) through its OpenAI-compatible API, then a built-in offline template. Temporary provider failures receive a bounded retry; permanent errors and invalid responses move to the next provider. The template uses only available job/resume details and works without API keys or internet access. Application records include the provider used. Gemini/DeepSeek may also answer application questions; required questions without a supported answer still block submission.
+
+Wellfound application forms are scanned inside the visible application modal or form, ranking candidate containers by their actual controls rather than assuming the first dialog is the form. The scanner recognizes visible and label-backed native/accessible controls, groups radio options, and scrolls the modal to reveal lazy-loaded fields before matching labels, ARIA names, options, and surrounding question text. Saved profile answers and the reusable question library take priority; sensitive experience, eligibility, and personal facts are never invented. Cover letters are written only into explicitly labeled cover-letter fields. Unmatched questions appear under the shortlist so you can save a confirmed answer for future roles; required unanswered questions pause the selected batch and are not submitted. Application form counts, proposed dry-run answers, unknown questions, cover-letter detection, and validation status are shown in the dashboard.
+
+To safely inspect a selected application without changing fields or submitting, set `AUTOWELL_DRY_RUN=true` in `.env`, restart Autowell, and use **Generate & submit selected applications** as usual. The dashboard will show detected questions and proposed saved answers; AI calls and cover-letter insertion are disabled in dry-run mode. Set it back to `false` before normal use. When form detection fails, Autowell saves a local screenshot and the application modal HTML under `form_debug/` and reports control counts by type; these diagnostics may contain personal data, so keep them private.
 
 The job importer stays on Wellfound's main jobs page, applies available search and filter controls there, and imports visible result cards without opening each job page. If a requested filter control is unavailable, the import continues and reports which filters could not be applied. It does not use a separate Wellfound API.
 

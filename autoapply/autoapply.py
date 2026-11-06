@@ -9,9 +9,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from autoapply.helper.gotolink import Gotolink
+from autoapply.helper.firefox_driver import resolve_geckodriver_path
 
 
 class JobScraper:
@@ -25,9 +25,7 @@ class JobScraper:
         self.options.add_argument(profile_path)
 
         self.driver = webdriver.Firefox(
-            service=FirefoxService(
-                executable_path=GeckoDriverManager().install()
-            ),
+            service=FirefoxService(executable_path=resolve_geckodriver_path()),
             options=self.options
         )
 

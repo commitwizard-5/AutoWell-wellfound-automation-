@@ -41,7 +41,7 @@ body {
   background-position: center top, center top, center top;
   background-size: auto, auto, cover;
   background-repeat: no-repeat;
-  background-attachment: scroll, scroll, fixed;
+  background-attachment: scroll;
   font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -173,36 +173,45 @@ h1 span {
 
 .tutorial-stack {
   position: relative;
-  padding-bottom: 12vh;
+  display: grid;
+  gap: clamp(90px, 16vh, 190px);
+  padding: 2vh 0 12vh;
 }
 
 .tutorial-card {
-  min-height: min(58vh, 560px);
-  position: sticky;
-  top: calc(12vh + var(--card-index) * 12px);
-  z-index: calc(10 + var(--card-index));
+  min-height: min(52vh, 490px);
   display: grid;
   grid-template-columns: 90px minmax(0, 1fr);
   align-items: center;
   gap: clamp(20px, 5vw, 72px);
   overflow: hidden;
-  margin-bottom: 17vh;
   padding: clamp(25px, 5vw, 66px);
   border: 1px solid rgba(235, 238, 255, 0.17);
   border-radius: 25px;
   background:
     radial-gradient(ellipse at 86% 20%, rgba(197, 179, 255, 0.12), transparent 35%),
     linear-gradient(135deg, rgba(28, 29, 41, 0.97), rgba(12, 14, 21, 0.98));
-  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.48);
-  transition: border-color 350ms ease, filter 350ms ease;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+  transform: translate3d(54px, 0, 0);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition:
+    transform 520ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 420ms ease,
+    border-color 250ms ease;
 }
 
-.tutorial-card:last-child {
-  margin-bottom: 0;
+.tutorial-card:nth-child(even) {
+  transform: translate3d(-54px, 0, 0);
+}
+
+.tutorial-card.is-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
 }
 
 .tutorial-card:not(.is-current) {
-  filter: brightness(0.73);
+  border-color: rgba(235, 238, 255, 0.11);
 }
 
 .tutorial-card.is-current {
@@ -327,7 +336,7 @@ h1 span {
   color: #c7c6ce;
   font-size: 0.82rem;
   line-height: 1.65;
-  backdrop-filter: blur(16px);
+  background: rgba(24, 23, 32, 0.94);
 }
 
 .notice p {
@@ -356,6 +365,66 @@ h1 span {
   align-items: center;
   border-color: var(--line);
   color: var(--muted);
+}
+
+.form-summary,
+.question-library,
+.unknown-question {
+  display: grid;
+  gap: 10px;
+}
+
+.form-summary {
+  margin-bottom: 20px;
+  padding: 15px 17px;
+  border: 1px solid rgba(197, 179, 255, 0.2);
+  border-radius: 13px;
+  background: rgba(145, 123, 207, 0.07);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.form-summary strong {
+  color: var(--ink);
+  font-size: 0.84rem;
+}
+
+.question-library {
+  margin-top: 20px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.question-library .panel-heading {
+  margin-bottom: 6px;
+}
+
+.question-library h3 {
+  margin: 0 0 7px;
+  font-size: 1.15rem;
+}
+
+.unknown-question {
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid rgba(230, 231, 245, 0.1);
+  border-radius: 12px;
+  background: rgba(5, 6, 10, 0.25);
+}
+
+.unknown-question > strong {
+  color: var(--ink);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.unknown-question > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .notice-error {
@@ -893,13 +962,13 @@ summary:focus-visible {
 
 .motion-ready .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 650ms ease var(--reveal-delay, 0ms), transform 650ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
+  transform: translate3d(0, 20px, 0);
+  transition: opacity 450ms ease var(--reveal-delay, 0ms), transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
 }
 
 .motion-ready .reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 @media (max-width: 800px) {
@@ -917,10 +986,9 @@ summary:focus-visible {
   }
 
   .tutorial-card {
-    min-height: max(58vh, 390px);
+    min-height: max(52vh, 390px);
     grid-template-columns: 58px minmax(0, 1fr);
     gap: 20px;
-    margin-bottom: 14vh;
     padding: 28px;
   }
 
@@ -983,11 +1051,9 @@ summary:focus-visible {
   }
 
   .tutorial-card {
-    min-height: max(62vh, 410px);
-    top: calc(9vh + var(--card-index) * 9px);
+    min-height: max(58vh, 410px);
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 14px;
-    margin-bottom: 12vh;
     padding: 22px 18px;
     border-radius: 18px;
   }

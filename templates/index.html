@@ -81,8 +81,6 @@
         <span class="notice-mark" aria-hidden="true">i</span>
         <p><strong>Your data, clearly:</strong> When AI generation is configured, resume text and links, saved answers, the job description, and application questions may be sent to Google Gemini or DeepSeek using your API key. If both are unavailable, cover letters use a local resume-grounded template. Required questions without a supported answer stop submission. Use only with the resume owner's consent and review each provider's data-handling terms.</p>
       </section>
-      <section class="notice status-notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
-
       <section class="grid" id="workspace">
         <article class="panel settings-panel reveal">
           <div class="panel-heading">
@@ -97,10 +95,17 @@
             <label>Resume PDF path<input name="resume_path" value="{{ config.resume_path }}" placeholder="C:\Users\you\Documents\resume.pdf"></label>
             <div class="form-divider"><p class="eyebrow">REUSABLE APPLICATION ANSWERS</p><p class="small-text">Saved locally and reused for recurring Wellfound questions. Answers may be shared with the configured AI provider when generating applications. Phone can be extracted from your resume if left blank.</p></div>
             <label>Phone number<input name="application_phone" type="tel" value="{{ config.application_phone }}" autocomplete="tel" placeholder="The number to use on applications"></label>
+            <label>Email address<input name="application_email" type="email" value="{{ config.application_email }}" autocomplete="email" placeholder="The email to use on applications"></label>
+            <label>LinkedIn profile URL<input name="application_linkedin" type="url" value="{{ config.application_linkedin }}" placeholder="https://www.linkedin.com/in/your-profile"></label>
+            <label>GitHub profile URL<input name="application_github" type="url" value="{{ config.application_github }}" placeholder="https://github.com/your-username"></label>
             <label>Were you referred?<select name="application_referred"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_referred == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_referred == 'No' else '' }}>No</option></select></label>
             <label>Referrer name and contact details<textarea name="application_referral_details" rows="3" placeholder="Required only when you were referred">{{ config.application_referral_details }}</textarea></label>
             <label>Will you require visa sponsorship?<select name="application_visa_sponsorship"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_visa_sponsorship == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_visa_sponsorship == 'No' else '' }}>No</option></select></label>
+            <label>Are you authorized to work in your target location?<select name="application_work_authorization"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_work_authorization == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_work_authorization == 'No' else '' }}>No</option></select></label>
             <label>Are you willing to relocate?<select name="application_relocation"><option value="">Choose your answer</option><option value="Yes" {{ 'selected' if config.application_relocation == 'Yes' else '' }}>Yes</option><option value="No" {{ 'selected' if config.application_relocation == 'No' else '' }}>No</option></select></label>
+            <label>Years of relevant experience<input name="application_experience" value="{{ config.application_experience }}" placeholder="Use only your actual experience"></label>
+            <label>Current location<input name="application_location" value="{{ config.application_location }}" autocomplete="address-level2" placeholder="City, country"></label>
+            <label>Notice period / availability<input name="application_availability" value="{{ config.application_availability }}" placeholder="For example, immediately or 2 weeks"></label>
             <button type="submit" class="button button-secondary">Save settings and answers <span aria-hidden="true">→</span></button>
           </form>
           {% if config_errors %}<ul class="errors">{% for item in config_errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="small-text setup-footnote">Gemini is tried first, then optional DeepSeek, then the built-in template. Selected applications are submitted automatically without a cover-letter preview.</p>{% endif %}
@@ -134,6 +139,32 @@
           <div><p class="eyebrow">STEP 3 / YOUR SHORTLIST</p><h2>Review roles</h2><p class="panel-intro">Check the details, open the original listing, then select roles to apply.</p></div>
           <span class="job-count">{{ jobs|length }} <span>imported</span></span>
         </div>
+        {% if form_summary %}
+        <section class="form-summary" aria-live="polite">
+          <strong>{{ 'Application dry run' if form_summary.dry_run else 'Application form check' }}</strong>
+          <span>
+            {% if form_summary.dry_run %}
+            {{ form_summary.proposed }}/{{ form_summary.total }} answers proposed · no fields changed · {{ form_summary.unknown }} need review
+            {% else %}
+            {{ form_summary.answered }}/{{ form_summary.total }} fields answered · {{ form_summary.unknown }} need review
+            {% endif %}
+            · Status: {{ form_summary.validation }}
+          </span>
+          <span>
+            Cover-letter field:
+            {% if form_summary.cover_letter_inserted %}
+              identified and filled
+            {% elif form_summary.cover_letter_detected %}
+              identified, not filled
+            {% else %}
+              not present
+            {% endif %}
+          </span>
+          {% for item in form_summary.proposed_answers %}
+          <span><strong>{{ item.question }}</strong> ({{ item.type }}): {{ item.answer }}</span>
+          {% endfor %}
+        </section>
+        {% endif %}
         {% if jobs %}
         <form action="/applications/submit" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -154,10 +185,29 @@
             </article>
             {% endfor %}
           </div>
+          <section class="notice status-notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
           <button class="button submit-button" type="submit" {{ 'disabled' if is_running or config_errors else '' }}>{{ 'Processing applications…' if is_running else 'Generate & submit selected applications' }} <span aria-hidden="true">→</span></button>
         </form>
         {% else %}
         <div class="empty-state"><span class="empty-orbit" aria-hidden="true">✳</span><strong>Your shortlist starts here</strong><span>Import roles above and they will appear here with their Wellfound listing details.</span></div>
+        <section class="notice status-notice {{ 'notice-error' if error else '' }}" aria-live="polite">{{ message }}</section>
+        {% endif %}
+        {% if unknown_questions %}
+        <form action="/answers/save" method="post" class="question-library">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="panel-heading">
+            <div><p class="eyebrow">ANSWER LIBRARY</p><h3>Questions to review</h3><p class="panel-intro">Save a truthful answer once; Autowell will reuse it for matching questions later. Existing answers are never overwritten.</p></div>
+          </div>
+          {% for item in unknown_questions %}
+          <div class="unknown-question">
+            <strong>{{ item.question }}</strong>
+            <span>Type: {{ item.type }}{% if item.options %} · Options: {{ item.options }}{% endif %}{% if item.required == 'yes' %} · Required{% endif %}</span>
+            <input type="hidden" name="questions" value="{{ item.question }}">
+            <label>Answer for future applications<input name="answers" autocomplete="off" placeholder="Enter your confirmed answer"></label>
+          </div>
+          {% endfor %}
+          <button type="submit" class="button button-secondary">Save new answers</button>
+        </form>
         {% endif %}
       </section>
 
@@ -194,29 +244,24 @@
 
         const tutorialCards = Array.from(document.querySelectorAll(".tutorial-card"));
         if ("IntersectionObserver" in window) {
-          const updateActiveCard = () => {
-            const focusLine = window.innerHeight * 0.43;
-            const visibleCards = tutorialCards
-              .map((card) => ({ card, bounds: card.getBoundingClientRect() }))
-              .filter(({ bounds }) => bounds.bottom > 0 && bounds.top < window.innerHeight);
-            if (!visibleCards.length) return;
-            const current = visibleCards.reduce((closest, candidate) =>
-              Math.abs(candidate.bounds.top + candidate.bounds.height / 2 - focusLine)
-                < Math.abs(closest.bounds.top + closest.bounds.height / 2 - focusLine)
-                ? candidate
-                : closest
-            );
+          const observer = new IntersectionObserver((entries) => {
+            entries
+              .filter((entry) => entry.isIntersecting)
+              .forEach((entry) => entry.target.classList.add("is-visible"));
+            const entering = entries
+              .filter((entry) => entry.isIntersecting)
+              .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+            if (!entering) return;
             tutorialCards.forEach((card) => {
-              const active = card === current.card;
+              const active = card === entering.target;
               card.classList.toggle("is-current", active);
               if (active) card.setAttribute("aria-current", "step");
               else card.removeAttribute("aria-current");
             });
-          };
-          const observer = new IntersectionObserver(updateActiveCard, { threshold: [0, 0.2, 0.5, 0.8] });
+          }, { threshold: [0.2, 0.45, 0.7], rootMargin: "-15% 0px -15% 0px" });
           tutorialCards.forEach((card) => observer.observe(card));
-          window.addEventListener("scroll", updateActiveCard, { passive: true });
-          updateActiveCard();
+        } else {
+          tutorialCards.forEach((card) => card.classList.add("is-visible"));
         }
 
         const cards = document.querySelectorAll(".reveal");

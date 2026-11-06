@@ -5,6 +5,6 @@ __pycache__/
 build/
 dist/
 job_applications.xlsx
-
+form_debug/
 
 
