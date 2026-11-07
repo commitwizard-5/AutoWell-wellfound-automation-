@@ -317,6 +317,10 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT / "static")), name="static")
 
     @app.get("/")
+    def landing(request: Request):
+        return TEMPLATES.TemplateResponse(request, "landing.html")
+
+    @app.get("/dashboard")
     def dashboard(request: Request):
         config = load_configuration()
         csrf_token = request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe(32)
@@ -383,7 +387,7 @@ def create_app() -> FastAPI:
             application_availability,
         )
         state.set_message("Local settings and reusable application answers saved.")
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
 
     @app.post("/answers/save")
     def save_question_answers(
@@ -414,7 +418,7 @@ def create_app() -> FastAPI:
         state.set_message(
             f"Saved {added} new answer(s). Existing saved answers were left unchanged."
         )
-        return RedirectResponse(url="/#shortlist", status_code=303)
+        return RedirectResponse(url="/dashboard#shortlist", status_code=303)
 
     @app.post("/jobs/import")
     def import_jobs(
@@ -428,19 +432,19 @@ def create_app() -> FastAPI:
         errors = profile_configuration_errors(config)
         if errors:
             state.set_message(" ".join(errors), error=True)
-            return RedirectResponse(url="/", status_code=303)
+            return RedirectResponse(url="/dashboard", status_code=303)
         filters = {"country": country.strip(), "keyword": keyword.strip(), "remote_only": remote_only,
                    "company_size": company_size, "employment_type": employment_type, "limit": limit}
         with state.lock:
             if state.is_running:
                 state.message = "An import is already in progress."
-                return RedirectResponse(url="/", status_code=303)
+                return RedirectResponse(url="/dashboard", status_code=303)
             state.is_running, state.error = True, False
             state.jobs = []
             state.filters = filters
             state.message = "Opening Firefox and importing jobs. Keep this page open, then refresh shortly."
         threading.Thread(target=scrape_jobs_in_background, args=(config, filters), daemon=True).start()
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
 
     @app.post("/applications/submit")
     def submit_applications(
@@ -453,13 +457,13 @@ def create_app() -> FastAPI:
         errors = configuration_errors(config)
         if errors:
             state.set_message(" ".join(errors), error=True)
-            return RedirectResponse(url="/", status_code=303)
+            return RedirectResponse(url="/dashboard", status_code=303)
 
         selected = set(job_ids)
         with state.lock:
             if state.is_running:
                 state.message = "Another import or application submission is already in progress."
-                return RedirectResponse(url="/", status_code=303)
+                return RedirectResponse(url="/dashboard", status_code=303)
             selected_jobs = [
                 job for job in state.jobs
                 if job["id"] in selected and job["link"] not in state.submitted_job_links
@@ -467,7 +471,7 @@ def create_app() -> FastAPI:
             if not selected_jobs:
                 state.message = "Select at least one job before submitting applications."
                 state.error = True
-                return RedirectResponse(url="/", status_code=303)
+                return RedirectResponse(url="/dashboard", status_code=303)
             state.is_running = True
             state.error = False
             state.unknown_questions = []
@@ -480,7 +484,7 @@ def create_app() -> FastAPI:
             args=(config, selected_jobs),
             daemon=True,
         ).start()
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/dashboard", status_code=303)
 
     return app
 

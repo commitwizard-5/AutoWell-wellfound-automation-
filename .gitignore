@@ -6,5 +6,5 @@ build/
 dist/
 job_applications.xlsx
 form_debug/
-
-
+.agents/skills/
+.windsurf/skills/ui-ux-pro-max/

@@ -14,9 +14,9 @@ Autowell is a local-first AI job application workflow assistant. It collects Wel
    ```
 
    Use the full path to `geckodriver.exe` on Windows. If there is no local or cached driver and GitHub is unavailable on the first run, install geckodriver separately and set this value.
-5. Run `python main.py` and open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+5. Run `python main.py` and open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the project showcase. Open [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard) for the local application dashboard.
 
-`templates/index.html` is a server-rendered Jinja template, not a standalone page. Its stylesheet can load when the file is opened directly, but template values and dashboard functionality require running `main.py`.
+The landing page and `templates/index.html` dashboard are server-rendered Jinja templates, not standalone pages. Their template values and functionality require running `main.py`.
 
 Dashboard forms use a random CSRF token checked against a `SameSite=Strict` cookie, helping prevent other websites from silently triggering local settings changes, job imports, or application submissions in an open browser session.
 

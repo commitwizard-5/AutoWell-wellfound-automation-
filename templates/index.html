@@ -5,76 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if is_running %}<meta http-equiv="refresh" content="3">{% endif %}
     <meta name="theme-color" content="#090b10">
-    <title>Autowell | Local AI Job Assistant</title>
+    <title>AutoWell | Local AI Job Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
   </head>
   <body>
     <main class="shell" id="top">
-      <header class="hero">
-        <a class="hero-logo" href="#top" aria-label="Autowell home">AUTOWELL<span>.</span></a>
-        <span class="scroll-cue" aria-hidden="true"><span></span></span>
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="AutoWell home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="m5.5 8 5 16 5.5-10.2L21.5 24l5-16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="27" cy="25" r="2.3" fill="currentColor"/></svg>
+          </span>
+          <span class="brand-word">autowell<span>.</span><small>CAREER WORKSPACE</small></span>
+        </a>
+        <nav class="topnav" aria-label="Main navigation">
+          <a href="#workspace">Workspace</a>
+          <a href="#shortlist">Shortlist <span class="nav-count">{{ jobs|length }}</span></a>
+        </nav>
+        <span class="local-indicator"><span aria-hidden="true"></span> Local dashboard</span>
       </header>
 
-      <section class="intro-section reveal" id="how-it-works" aria-labelledby="guide-title">
-        <div class="section-heading">
-          <p class="eyebrow">YOUR SEARCH, STEP BY STEP</p>
-          <h2 id="guide-title">A better way to move forward.</h2>
-          <p>Scroll through the guide. Each card opens as it comes into focus.</p>
+      <section class="welcome reveal" aria-labelledby="welcome-title">
+        <div class="welcome-copy">
+          <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> YOUR SEARCH, WITH A PLAN</p>
+          <h1 id="welcome-title">Make your next move <span>count.</span></h1>
+          <p class="welcome-description">Find roles that fit, review every opportunity, and move through applications with more intention.</p>
+          <div class="welcome-actions">
+            <a class="button welcome-button" href="#workspace">Open your workspace <span aria-hidden="true">↓</span></a>
+            <span class="welcome-note">You choose which applications to submit.</span>
+          </div>
         </div>
-        <div class="tutorial-stack">
-          <article class="tutorial-card is-current" style="--card-index: 0" aria-current="step">
-            <div class="tutorial-index">01 <span>/ 04</span></div>
-            <div class="tutorial-content">
-              <p class="eyebrow">FIRST, MAKE IT YOURS</p>
-              <h3>Set up your profile.</h3>
-              <div class="instruction-copy">
-                <p>Add your Firefox profile folder and, if available, your resume PDF. Gemini and DeepSeek keys are optional. Add truthful reusable answers for recurring application questions, then save.</p>
-                <p>Your key and profile answers are stored in the project's local <code>.env</code> file. Leave the key field blank later to keep the saved key.</p>
-              </div>
-              <a class="tutorial-link" href="#workspace">Go to local settings <span aria-hidden="true">↓</span></a>
-            </div>
-            <span class="tutorial-orbit" aria-hidden="true"></span>
-          </article>
-          <article class="tutorial-card" style="--card-index: 1">
-            <div class="tutorial-index">02 <span>/ 04</span></div>
-            <div class="tutorial-content">
-              <p class="eyebrow">MAKE THE SEARCH YOURS</p>
-              <h3>Find roles that fit.</h3>
-              <div class="instruction-copy">
-                <p>Set a country, title keywords, company size, employment type, and remote preference. Autowell applies the available filters on Wellfound and imports matching job cards.</p>
-                <p>If a Wellfound filter is unavailable, the import can continue and report which condition it could not apply.</p>
-              </div>
-              <a class="tutorial-link" href="#workspace">Go to job search <span aria-hidden="true">↓</span></a>
-            </div>
-            <span class="tutorial-orbit" aria-hidden="true"></span>
-          </article>
-          <article class="tutorial-card" style="--card-index: 2">
-            <div class="tutorial-index">03 <span>/ 04</span></div>
-            <div class="tutorial-content">
-              <p class="eyebrow">YOU ARE IN CONTROL</p>
-              <h3>Review. Then choose.</h3>
-              <div class="instruction-copy">
-                <p>Expand Listing details to read the imported card, or open the original Wellfound listing for more context. Select only the jobs you want to apply for.</p>
-                <p>Clicking Generate &amp; submit sends the selected applications automatically—there is no cover-letter preview. Required questions without a truthful supported answer stop that application.</p>
-              </div>
-              <a class="tutorial-link" href="#shortlist">See your shortlist <span aria-hidden="true">↓</span></a>
-            </div>
-            <span class="tutorial-orbit" aria-hidden="true"></span>
-          </article>
-          <article class="tutorial-card" style="--card-index: 3">
-            <div class="tutorial-index">04 <span>/ 04</span></div>
-            <div class="tutorial-content">
-              <p class="eyebrow">A SMALL BUT IMPORTANT GUARDRAIL</p>
-              <h3>Local actions, protected.</h3>
-              <div class="instruction-copy">
-                <p>Autowell adds a random CSRF token to each form and validates it against a SameSite=Strict cookie. This helps prevent another website from silently triggering settings changes, job imports, or application submissions through your open browser session.</p>
-                <p>It is one layer of protection—not a substitute for keeping your machine and browser secure, or reviewing which jobs you select.</p>
-              </div>
-              <span class="security-badge"><span aria-hidden="true">✓</span> CSRF checks enabled</span>
-            </div>
-            <span class="tutorial-orbit" aria-hidden="true"></span>
-          </article>
-        </div>
+        <aside class="workflow-card" aria-label="Your job search workflow">
+          <div class="workflow-top"><span>YOUR WORKFLOW</span><span class="workflow-status"><span aria-hidden="true"></span> READY WHEN YOU ARE</span></div>
+          <div class="workflow-total"><strong>{{ jobs|length }}</strong><span>roles in your shortlist</span></div>
+          <ol class="workflow-steps">
+            <li><span class="workflow-step-number">01</span><span><strong>Set your profile</strong><small>Prepare your application details</small></span><span class="workflow-step-arrow" aria-hidden="true">↗</span></li>
+            <li><span class="workflow-step-number">02</span><span><strong>Discover opportunities</strong><small>Import matching Wellfound roles</small></span><span class="workflow-step-arrow" aria-hidden="true">↗</span></li>
+            <li><span class="workflow-step-number">03</span><span><strong>Review, then apply</strong><small>Choose the applications to send</small></span><span class="workflow-step-arrow" aria-hidden="true">↗</span></li>
+          </ol>
+        </aside>
       </section>
 
       <section class="notice privacy-note reveal" aria-label="AI data handling notice">
@@ -196,7 +164,7 @@
         <form action="/answers/save" method="post" class="question-library">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="panel-heading">
-            <div><p class="eyebrow">ANSWER LIBRARY</p><h3>Questions to review</h3><p class="panel-intro">Save a truthful answer once; Autowell will reuse it for matching questions later. Existing answers are never overwritten.</p></div>
+            <div><p class="eyebrow">ANSWER LIBRARY</p><h3>Questions to review</h3><p class="panel-intro">Save a truthful answer once; AutoWell will reuse it for matching questions later. Existing answers are never overwritten.</p></div>
           </div>
           {% for item in unknown_questions %}
           <div class="unknown-question">
@@ -212,7 +180,7 @@
       </section>
 
       <footer class="site-footer reveal">
-        <div><a class="footer-brand" href="#top" aria-label="Autowell home">AUTOWELL<span>.</span></a><p>Thoughtful tools for your next opportunity.</p></div>
+        <div><a class="footer-brand" href="#top" aria-label="AutoWell home">AUTOWELL<span>.</span></a><p>Thoughtful tools for your next opportunity.</p></div>
         <div class="footer-contact"><span>BUILT BY</span><strong>Ashmit Gautam</strong><span>NIT Jalandhar</span></div>
         <div class="footer-links"><a href="https://www.linkedin.com/in/ashmit-gautam-nitj/" target="_blank" rel="me noreferrer">LinkedIn <span aria-hidden="true">↗</span></a><a href="mailto:ashmitgautam788@gmail.com">ashmitgautam788@gmail.com</a></div>
       </footer>
@@ -229,40 +197,6 @@
         window.addEventListener("pagehide", () => {
           sessionStorage.setItem(scrollKey, String(window.scrollY));
         });
-
-        const hero = document.querySelector(".hero");
-        const heroLogo = document.querySelector(".hero-logo");
-        const updateHeroLogo = () => {
-          const fadeDistance = Math.max(1, hero.offsetHeight * 0.62);
-          const progress = Math.min(window.scrollY / fadeDistance, 1);
-          heroLogo.style.opacity = String(1 - progress);
-          heroLogo.style.transform = `translateY(${-24 * progress}px) scale(${1 - progress * 0.035})`;
-          heroLogo.style.pointerEvents = progress > 0.95 ? "none" : "auto";
-        };
-        window.addEventListener("scroll", updateHeroLogo, { passive: true });
-        updateHeroLogo();
-
-        const tutorialCards = Array.from(document.querySelectorAll(".tutorial-card"));
-        if ("IntersectionObserver" in window) {
-          const observer = new IntersectionObserver((entries) => {
-            entries
-              .filter((entry) => entry.isIntersecting)
-              .forEach((entry) => entry.target.classList.add("is-visible"));
-            const entering = entries
-              .filter((entry) => entry.isIntersecting)
-              .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-            if (!entering) return;
-            tutorialCards.forEach((card) => {
-              const active = card === entering.target;
-              card.classList.toggle("is-current", active);
-              if (active) card.setAttribute("aria-current", "step");
-              else card.removeAttribute("aria-current");
-            });
-          }, { threshold: [0.2, 0.45, 0.7], rootMargin: "-15% 0px -15% 0px" });
-          tutorialCards.forEach((card) => observer.observe(card));
-        } else {
-          tutorialCards.forEach((card) => card.classList.add("is-visible"));
-        }
 
         const cards = document.querySelectorAll(".reveal");
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {

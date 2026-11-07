@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10110f">
+    <meta name="description" content="Meet AutoWell: a local-first Wellfound job search and application workflow, built with Python, Selenium and optional AI providers.">
+    <title>AutoWell — Your next opportunity shouldn't wait.</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2310110f'/%3E%3Ctext x='32' y='48' text-anchor='middle' font-family='Arial' font-size='42' fill='%23f8f6f1'%3Ew%3C/text%3E%3Ccircle cx='49' cy='48' r='5' fill='%23f26d57'/%3E%3C/svg%3E">
+    <link rel="preload" as="image" href="{{ url_for('static', path='mountain-hero.jpg') }}" fetchpriority="high">
+    <link rel="stylesheet" href="{{ url_for('static', path='landing.css') }}">
+    <script defer src="{{ url_for('static', path='landing.js') }}"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#story">Skip to the AutoWell story</a>
+    <header class="site-nav" data-site-nav>
+      <a class="wordmark" href="#top" aria-label="AutoWell home">
+        <span class="wordmark-symbol" aria-hidden="true">w<span>.</span></span>
+        <span class="wordmark-name">autowell<small>INDEPENDENT PROJECT · WELLFOUND WORKFLOW</small></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation">
+        <span></span><span></span>
+      </button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation">
+        <a href="#story">The story</a>
+        <a href="#product">The product</a>
+        <a href="#technology">Technology</a>
+        <a class="nav-dashboard" href="/dashboard">Open workspace <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="mountain-hero" id="top" aria-labelledby="hero-title">
+        <div class="mountain-photo" aria-hidden="true"></div>
+        <div class="mountain-grain" aria-hidden="true"></div>
+        <div class="hero-coordinate" aria-hidden="true">A LOCAL-FIRST JOB SEARCH WORKFLOW <span>·</span> 01 / 08</div>
+        <div class="hero-content">
+          <div class="hero-kicker"><span class="hero-kicker-dot" aria-hidden="true"></span> MADE FOR THE NEXT MOVE</div>
+          <h1 id="hero-title">Your next opportunity<br>shouldn’t <em>wait.</em></h1>
+          <p>Meet AutoWell. An intelligent job application workflow assistant built to make your search faster, smarter, and more organized.</p>
+          <div class="hero-actions">
+            <a class="button button-light" href="/dashboard">Explore AutoWell <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#story">See how it works <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+        <div class="hero-bottom">
+          <a class="scroll-prompt" href="#story"><span class="scroll-indicator" aria-hidden="true"><span></span></span> SCROLL TO EXPLORE</a>
+          <a class="photo-credit" href="https://unsplash.com" target="_blank" rel="noreferrer">MOUNTAIN PHOTOGRAPHY VIA UNSPLASH <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-edge" aria-hidden="true"><span>FIND THE RIGHT NEXT STEP</span><span>SCROLL / 01</span></div>
+      </section>
+
+      <section class="terminal-section" id="story" aria-labelledby="terminal-heading">
+        <div class="section-shell">
+          <header class="section-intro terminal-intro reveal">
+            <p class="eyebrow"><span>01</span> UNDER THE HOOD</p>
+            <h2 id="terminal-heading">A job search,<br>made <em>less manual.</em></h2>
+            <p>The real workflow, in the real codebase. Scroll through the steps AutoWell actually takes—from Wellfound listings to an application that’s ready for your review.</p>
+          </header>
+
+          <div class="terminal-story" data-terminal-story>
+            <div class="terminal-chapters">
+              <article class="terminal-chapter is-active" id="chapter-discovery" data-terminal-chapter="discovery" data-file="autoapply/autoapply.py" data-step="01">
+                <button class="chapter-button" type="button" aria-pressed="true" aria-controls="code-window">
+                  <span class="chapter-number">01</span>
+                  <span class="chapter-body"><strong>Discover the right roles.</strong><span>Search Wellfound with your filters. The importer gathers visible listing cards—without opening every job page.</span><span class="chapter-proof">ACTUAL SOURCE · JOBSCRAPER.SCRAPE_JOBS</span></span>
+                  <span class="chapter-arrow" aria-hidden="true">↗</span>
+                </button>
+              </article>
+              <article class="terminal-chapter" id="chapter-resume" data-terminal-chapter="resume" data-file="autoapply/helper/genai.py" data-step="02">
+                <button class="chapter-button" type="button" aria-pressed="false" aria-controls="code-window">
+                  <span class="chapter-number">02</span>
+                  <span class="chapter-body"><strong>Work from your resume.</strong><span>Text and links are read from your configured PDF when it’s available—so generated materials can use your actual experience.</span><span class="chapter-proof">ACTUAL SOURCE · RESUME CONTEXT</span></span>
+                  <span class="chapter-arrow" aria-hidden="true">↗</span>
+                </button>
+              </article>
+              <article class="terminal-chapter" id="chapter-cover-letter" data-terminal-chapter="letter" data-file="autoapply/helper/genai.py" data-step="03">
+                <button class="chapter-button" type="button" aria-pressed="false" aria-controls="code-window">
+                  <span class="chapter-number">03</span>
+                  <span class="chapter-body"><strong>Keep cover letters moving.</strong><span>Configured Gemini and DeepSeek providers are tried in order. If neither is configured or succeeds, a built-in template is used.</span><span class="chapter-proof">ACTUAL SOURCE · PROVIDER FALLBACK</span></span>
+                  <span class="chapter-arrow" aria-hidden="true">↗</span>
+                </button>
+              </article>
+              <article class="terminal-chapter" id="chapter-application" data-terminal-chapter="application" data-file="autoapply/helper/gotolink.py" data-step="04">
+                <button class="chapter-button" type="button" aria-pressed="false" aria-controls="code-window">
+                  <span class="chapter-number">04</span>
+                  <span class="chapter-body"><strong>Pause where it matters.</strong><span>Firefox handles selected roles; required unknown answers pause submission so you can review them instead of inventing personal facts.</span><span class="chapter-proof">ACTUAL SOURCE · REQUIRED-ANSWER GUARDRAIL</span></span>
+                  <span class="chapter-arrow" aria-hidden="true">↗</span>
+                </button>
+              </article>
+            </div>
+
+            <div class="terminal-pin">
+              <div class="terminal-window" id="code-window" aria-label="AutoWell source code preview">
+                <div class="terminal-titlebar">
+                  <div class="window-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+                  <span class="terminal-project">AUTOWELL <span>/</span> PYTHON WORKSPACE</span>
+                  <span class="terminal-live"><i></i> SOURCE EXCERPT</span>
+                </div>
+                      <div class="terminal-tabs">
+                        <span class="terminal-tab is-active" id="source-tab"><span aria-hidden="true">⌘</span> <span data-terminal-file>autoapply/autoapply.py</span></span>
+                  <span class="terminal-branch">main <span aria-hidden="true">⌄</span></span>
+                </div>
+                <div class="terminal-code-wrap">
+                        <div class="terminal-code" aria-label="Actual Python source excerpt" aria-live="polite" aria-atomic="true" data-code-window>
+                    <ol class="code-lines" data-code-lines></ol>
+                  </div>
+                </div>
+                <div class="terminal-statusbar"><span><i></i> Python</span><span data-terminal-progress>DISCOVERY · 01 / 04</span><span>READ ONLY · ACTUAL REPO</span></div>
+              </div>
+              <p class="terminal-caption">Small excerpts from AutoWell’s actual Python implementation. No invented backend snippets.</p>
+            </div>
+          </div>
+
+          <div class="terminal-outro reveal">
+            <p>From discovering opportunities to preparing applications.</p>
+            <h3>One thoughtful workflow.</h3>
+            <a class="button button-outline-light" href="#technology">Explore the technology <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="product-section" id="product" aria-labelledby="product-heading">
+        <div class="section-shell">
+          <div class="product-head reveal">
+            <div>
+              <p class="eyebrow"><span>02</span> THE PRODUCT</p>
+              <h2 id="product-heading">Less repetitive work.<br><em>More meaningful opportunities.</em></h2>
+            </div>
+            <p class="product-lede">AutoWell brings a considered workflow to the busywork around a job search. Seven connected steps. Your experience, your call at every checkpoint.</p>
+          </div>
+
+          <div class="journey-layout">
+            <div class="journey-list" role="list">
+              <article class="journey-step is-current" role="listitem">
+                <span class="journey-index">01</span><div><h3>Discover jobs</h3><p>Search visible Wellfound job cards using your chosen location, title, and available filters.</p></div><span class="journey-state">LIVE</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">02</span><div><h3>Review opportunities</h3><p>Inspect the listing details and open the original job post before making a decision.</p></div><span class="journey-state">YOU DECIDE</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">03</span><div><h3>Understand requirements</h3><p>Application fields are identified and candidate answers are matched from saved profile details.</p></div><span class="journey-state">GUARDED</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">04</span><div><h3>Prepare a cover letter</h3><p>Generate a job-specific letter with configured AI providers—or use the built-in local template.</p></div><span class="journey-state">FALLBACK READY</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">05</span><div><h3>Map application answers</h3><p>Reuse profile answers and confirmed question-library responses; unsupported required facts are never guessed.</p></div><span class="journey-state">TRUTH FIRST</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">06</span><div><h3>Work through the browser</h3><p>Selenium and Firefox handle the application flow. Unknown required questions pause it for your review.</p></div><span class="journey-state">REVIEW GATE</span>
+              </article>
+              <article class="journey-step" role="listitem">
+                <span class="journey-index">07</span><div><h3>Keep a record</h3><p>Application attempts, outcomes, errors, and the cover-letter provider are recorded in a local workbook.</p></div><span class="journey-state">LOCAL LOG</span>
+              </article>
+            </div>
+
+            <aside class="journey-art" aria-label="Illustration of the AutoWell job application workflow">
+              <div class="journey-art-top"><span>THE SEARCH IN MOTION</span><span>01 — 07</span></div>
+              <div class="orbit-art" aria-hidden="true">
+                <span class="orbit-ring orbit-ring-one"></span><span class="orbit-ring orbit-ring-two"></span>
+                <span class="orbit-center"><svg viewBox="0 0 42 42" fill="none"><path d="M11 29.5 20.8 9l10.2 20.5M14.4 22h13.2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31" cy="29" r="2.6" fill="currentColor"/></svg></span>
+                <span class="orbit-node node-discover">01 <span>DISCOVER</span></span><span class="orbit-node node-prepare">04 <span>PREPARE</span></span><span class="orbit-node node-review">06 <span>REVIEW</span></span>
+                <span class="orbit-trace trace-one"></span><span class="orbit-trace trace-two"></span><span class="orbit-trace trace-three"></span>
+              </div>
+              <p class="journey-art-note">A guided process, not an autopilot. Your saved facts stay yours, and you choose what moves forward.</p>
+              <a class="inline-link" href="/dashboard#workspace">Set up your local workspace <span aria-hidden="true">↗</span></a>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo-section" id="demo" aria-labelledby="demo-heading">
+        <div class="section-shell">
+          <div class="demo-intro reveal">
+            <div><p class="eyebrow"><span>03</span> A CLOSER LOOK</p><h2 id="demo-heading">A real workflow.<br><em>Before the first click.</em></h2></div>
+            <p>This interactive walkthrough uses clearly labeled sample data. It’s a visual product tour—not a live Wellfound connection, an AI request, or an application submission.</p>
+          </div>
+          <div class="demo-frame reveal">
+            <div class="demo-sidebar">
+              <div class="demo-brand"><span class="demo-brand-icon">w<span>.</span></span><span>autowell<small>WORKSPACE PREVIEW</small></span></div>
+              <p class="demo-side-label">YOUR SHORTLIST <span>DEMO</span></p>
+              <div class="demo-jobs" role="tablist" aria-label="Sample job listings">
+                <button class="demo-job is-selected" type="button" role="tab" id="demo-role-one" aria-selected="true" aria-controls="demo-job-panel" data-demo-job="engineer"><span class="demo-job-dot"></span><span><strong>Software Engineer</strong><small>Example company · Remote</small></span></button>
+                <button class="demo-job" type="button" role="tab" id="demo-role-two" aria-selected="false" aria-controls="demo-job-panel" tabindex="-1" data-demo-job="product"><span class="demo-job-dot"></span><span><strong>Product Engineer</strong><small>Sample startup · Hybrid</small></span></button>
+                <button class="demo-job" type="button" role="tab" id="demo-role-three" aria-selected="false" aria-controls="demo-job-panel" tabindex="-1" data-demo-job="data"><span class="demo-job-dot"></span><span><strong>Data Engineer</strong><small>Demo company · Remote</small></span></button>
+              </div>
+              <div class="demo-candidate"><span class="candidate-avatar" aria-hidden="true">CP</span><span><strong>Candidate profile</strong><small>Sample data · not your account</small></span></div>
+            </div>
+            <div class="demo-content" id="demo-job-panel" role="tabpanel" aria-labelledby="demo-role-one" tabindex="0">
+              <div class="demo-content-top"><span class="demo-breadcrumb">SHORTLIST <span>/</span> ROLE OVERVIEW</span><span class="sample-badge"><i></i> INTERACTIVE SAMPLE</span></div>
+              <div class="demo-role-heading"><div><p class="demo-company-label" data-demo-company>EXAMPLE COMPANY <span>·</span> SAMPLE ROLE</p><h3 data-demo-title>Software Engineer</h3></div><span class="demo-status">Needs your review</span></div>
+              <div class="demo-description"><h4>About the opportunity</h4><p data-demo-description>A representative role for the AutoWell walkthrough. In the actual dashboard, imported Wellfound cards include their available listing details and a link to the original post.</p></div>
+              <div class="demo-skills"><span>ROLE DETAILS</span><span data-demo-skills>Wellfound listing · role review · sample data</span></div>
+              <div class="demo-letter">
+                <div class="demo-letter-head"><span>ILLUSTRATIVE COVER LETTER PREVIEW</span><span>DEMO ONLY</span></div>
+                <p data-demo-letter>“Hello, I’m exploring the Software Engineer opportunity at Example Company. This sample illustrates where a tailored letter may be prepared using the selected job and configured candidate information.”</p>
+                <span class="demo-letter-foot">In the working dashboard, generated letters are inserted into an explicitly identified cover-letter field. There is no pre-submission letter preview.</span>
+              </div>
+              <div class="demo-progress">
+                <div class="demo-progress-heading"><span>WORKFLOW WALKTHROUGH</span><span data-demo-stage-label>01 / 03 · REVIEW</span></div>
+                <div class="demo-progress-track" aria-hidden="true"><span data-demo-progress></span></div>
+                <div class="demo-stage-tabs" role="group" aria-label="Choose a sample workflow stage">
+                  <button type="button" class="is-current" data-demo-stage="0" aria-pressed="true"><span>01</span> Review</button>
+                  <button type="button" data-demo-stage="1" aria-pressed="false"><span>02</span> Prepare</button>
+                  <button type="button" data-demo-stage="2" aria-pressed="false"><span>03</span> Confirm</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="demo-footnote"><span aria-hidden="true">i</span> This preview is isolated from your local application state. To import real jobs, open the workspace.</p>
+          <aside class="privacy-footnote"><span>PRIVACY, PLAINLY</span><p>When an AI provider is configured, resume text and links, saved answers, the job description, and application questions may be sent to that provider. Use only with the resume owner’s consent, and review the provider’s data-handling terms.</p></aside>
+        </div>
+      </section>
+
+      <section class="capabilities-section" aria-labelledby="capabilities-heading">
+        <div class="section-shell">
+          <div class="capabilities-head reveal">
+            <div><p class="eyebrow"><span>04</span> BUILT, NOT PROMISED</p><h2 id="capabilities-heading">Thoughtful automation.<br><em>Honest guardrails.</em></h2></div>
+            <p>Every capability below is grounded in the current repository. The labels describe what is implemented today—not a roadmap dressed up as a feature list.</p>
+          </div>
+          <div class="capability-list">
+            <article class="capability-row reveal"><span class="capability-number">01</span><span class="capability-symbol" aria-hidden="true">↗</span><div><h3>Wellfound job discovery</h3><p>Search the signed-in Wellfound jobs page and import visible role cards with available search filters.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">02</span><span class="capability-symbol" aria-hidden="true">✳</span><div><h3>Grounded cover letters</h3><p>Generate role-aware letters from the job description and available resume context, with a built-in template fallback.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">03</span><span class="capability-symbol" aria-hidden="true">⌕</span><div><h3>Application field detection</h3><p>Scan visible controls inside the Wellfound application flow, including dynamically revealed fields and explicit cover-letter inputs.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">04</span><span class="capability-symbol" aria-hidden="true">≋</span><div><h3>Confirmed answer mapping</h3><p>Match saved profile details and reusable answers. Sensitive or unsupported facts are not guessed.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">05</span><span class="capability-symbol" aria-hidden="true">⌘</span><div><h3>Firefox browser workflow</h3><p>Use Selenium with a configured Firefox profile for job review and application workflows.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">06</span><span class="capability-symbol" aria-hidden="true">▤</span><div><h3>Application attempt history</h3><p>Record date, link, description, cover letter, status, error, and provider in a local Excel workbook.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">07</span><span class="capability-symbol" aria-hidden="true">↻</span><div><h3>Provider fallback</h3><p>Try Gemini, then configured DeepSeek, then the built-in template; temporary provider failures receive bounded retries.</p></div><span class="implemented">IMPLEMENTED</span></article>
+            <article class="capability-row reveal"><span class="capability-number">08</span><span class="capability-symbol" aria-hidden="true">✓</span><div><h3>Required-answer checks</h3><p>Pause applications when required fields lack a confirmed answer; dry-run mode inspects forms without submitting.</p></div><span class="implemented">IMPLEMENTED</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="architecture-section" id="technology" aria-labelledby="architecture-heading">
+        <div class="section-shell">
+          <div class="architecture-head reveal">
+            <div><p class="eyebrow"><span>05</span> SYSTEM MAP</p><h2 id="architecture-heading">A small system.<br><em>Clear responsibilities.</em></h2></div>
+            <p>Hover, focus, or select a node to explore the real architecture. Local orchestration stays in Python; external providers are optional and configurable.</p>
+          </div>
+          <div class="architecture-layout">
+            <div class="architecture-canvas" aria-label="Interactive AutoWell system architecture">
+              <svg class="architecture-lines" viewBox="0 0 860 490" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M160 112H306M437 112H600M368 153V239M160 349H296M436 349H600M366 278V349M665 154V304"/>
+                <path d="M665 154V304" class="line-dashed"/>
+                <circle cx="160" cy="112" r="3"/><circle cx="600" cy="112" r="3"/><circle cx="160" cy="349" r="3"/><circle cx="600" cy="349" r="3"/>
+              </svg>
+              <button class="arch-node node-wellfound" type="button" data-arch-node="wellfound" aria-pressed="false"><span class="arch-node-icon">W</span><span><strong>Wellfound</strong><small>Visible job listings</small></span></button>
+              <button class="arch-node node-scraper" type="button" data-arch-node="scraper" aria-pressed="false"><span class="arch-node-icon">Py</span><span><strong>Python · FastAPI</strong><small>Local web server + workflow</small></span></button>
+              <button class="arch-node node-firefox" type="button" data-arch-node="firefox" aria-pressed="false"><span class="arch-node-icon">Fx</span><span><strong>Selenium · Firefox</strong><small>Configured browser profile</small></span></button>
+              <button class="arch-node node-resume" type="button" data-arch-node="resume" aria-pressed="false"><span class="arch-node-icon">PDF</span><span><strong>Resume · PDF</strong><small>Extract text and links</small></span></button>
+              <button class="arch-node node-mapping" type="button" data-arch-node="mapping" aria-pressed="false"><span class="arch-node-icon">Q/A</span><span><strong>Answer mapping</strong><small>Profile + saved responses</small></span></button>
+              <button class="arch-node node-gemini" type="button" data-arch-node="gemini" aria-pressed="false"><span class="arch-node-icon">G</span><span><strong>Gemini</strong><small>Optional first provider</small></span></button>
+              <button class="arch-node node-deepseek" type="button" data-arch-node="deepseek" aria-pressed="false"><span class="arch-node-icon">D</span><span><strong>DeepSeek</strong><small>Optional fallback provider</small></span></button>
+              <button class="arch-node node-tracking" type="button" data-arch-node="tracking" aria-pressed="false"><span class="arch-node-icon">XLS</span><span><strong>Excel log</strong><small>Local application records</small></span></button>
+              <div class="arch-node node-dashboard"><span class="arch-node-icon">UI</span><span><strong>Web dashboard</strong><small>Local review + settings</small></span></div>
+              <span class="flow-pulse pulse-one" aria-hidden="true"></span><span class="flow-pulse pulse-two" aria-hidden="true"></span>
+            </div>
+            <aside class="architecture-detail" aria-live="polite" aria-atomic="true">
+              <p class="eyebrow">COMPONENT NOTES</p>
+              <span class="architecture-detail-index" data-arch-index>01</span>
+              <h3 data-arch-title>Local by design.</h3>
+              <p data-arch-description>The FastAPI dashboard and workflow run locally. Provider calls only happen when a configured Gemini or DeepSeek integration is used; otherwise cover letters can use the built-in template.</p>
+              <span class="architecture-detail-meta" data-arch-meta>ORCHESTRATION · PYTHON</span>
+              <div class="architecture-key"><span><i class="key-primary"></i>LOCAL WORKFLOW</span><span><i class="key-external"></i>OPTIONAL PROVIDER</span></div>
+            </aside>
+          </div>
+          <p class="architecture-note">No public application API is represented here. Wellfound discovery and browser interaction use the signed-in Firefox session configured on the local machine.</p>
+        </div>
+      </section>
+
+      <section class="timeline-section" aria-labelledby="timeline-heading">
+        <div class="section-shell">
+          <div class="timeline-head reveal">
+            <div><p class="eyebrow"><span>06</span> THE BUILD, SO FAR</p><h2 id="timeline-heading">Made one useful step<br><em>at a time.</em></h2></div>
+            <p>Milestones are drawn from this repository’s commit history—not invented launch metrics or a fictional product roadmap.</p>
+          </div>
+          <div class="timeline-layout">
+            <div class="timeline-rail" role="tablist" aria-label="Verified project milestones">
+              <button class="timeline-item is-active" type="button" role="tab" aria-selected="true" aria-controls="milestone-detail" id="milestone-idea" data-milestone="idea"><time datetime="2026-09-12">12 SEP 2026</time><span class="timeline-dot"></span><strong>First commit</strong></button>
+              <button class="timeline-item" type="button" role="tab" aria-selected="false" aria-controls="milestone-detail" id="milestone-deploy" tabindex="-1" data-milestone="deploy"><time datetime="2026-10-28">28 OCT 2026</time><span class="timeline-dot"></span><strong>First deployment</strong></button>
+              <button class="timeline-item" type="button" role="tab" aria-selected="false" aria-controls="milestone-detail" id="milestone-discovery" tabindex="-1" data-milestone="discovery"><time datetime="2026-11-02">02 NOV 2026</time><span class="timeline-dot"></span><strong>Wellfound-first discovery</strong></button>
+              <button class="timeline-item" type="button" role="tab" aria-selected="false" aria-controls="milestone-detail" id="milestone-ai" tabindex="-1" data-milestone="ai"><time datetime="2026-11-05">05 NOV 2026</time><span class="timeline-dot"></span><strong>Provider fallback</strong></button>
+              <button class="timeline-item" type="button" role="tab" aria-selected="false" aria-controls="milestone-detail" id="milestone-forms" tabindex="-1" data-milestone="forms"><time datetime="2026-11-06">06 NOV 2026</time><span class="timeline-dot"></span><strong>Application review flows</strong></button>
+            </div>
+            <article class="milestone-detail" id="milestone-detail" role="tabpanel" aria-labelledby="milestone-idea" aria-live="polite" aria-atomic="true">
+              <span class="milestone-overline">BUILD NOTES <span>·</span> <span data-milestone-date>12 SEPTEMBER 2026</span></span>
+              <h3 data-milestone-title>A first commit, and a direction.</h3>
+              <p data-milestone-description>The repository begins. The project’s history records a first Wellfound deployment on October 28; the milestones that follow track real changes in job discovery, provider reliability, and application review.</p>
+              <div class="milestone-tags" data-milestone-tags><span>PROJECT HISTORY</span><span>INCREMENTAL BUILD</span></div>
+              <a class="inline-link" href="https://github.com/commitwizard-5/wellfound_latest_automation" target="_blank" rel="noreferrer">Read the project history <span aria-hidden="true">↗</span></a>
+              <div class="milestone-scrim" aria-hidden="true">AUTOWELL / FIELD NOTES</div>
+            </article>
+          </div>
+          <p class="timeline-footnote">Dates and milestone labels reflect the available local Git history. Earlier uncommitted experiments are not included.</p>
+        </div>
+      </section>
+
+      <section class="principles-section" aria-labelledby="principles-heading">
+        <div class="section-shell principles-layout">
+          <div class="principles-title reveal"><p class="eyebrow"><span>07</span> THE POINT OF IT</p><h2 id="principles-heading">Built to give your job search<br><em>its time back.</em></h2><p>No time-saved promises. Just a more considered way through repetitive application work.</p></div>
+          <div class="principles-list reveal">
+            <p><span>01</span>Reduce repetitive application work.</p>
+            <p><span>02</span>Keep opportunities in one shortlist.</p>
+            <p><span>03</span>Prepare personalized application material.</p>
+            <p><span>04</span>Handle repeatable browser interactions.</p>
+            <p><span>05</span>Record application attempts and outcomes.</p>
+            <p><span>06</span>Keep the candidate in control.</p>
+            <div class="candidate-control"><span class="control-check" aria-hidden="true">✓</span><span><strong>Automation with a human checkpoint.</strong><small>Unknown required answers pause. Dry run is available. You select the roles.</small></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing-section" aria-labelledby="closing-heading">
+        <div class="closing-photo" aria-hidden="true"></div>
+        <div class="closing-content reveal">
+          <p class="eyebrow"><span class="hero-kicker-dot" aria-hidden="true"></span> THE NEXT STEP IS YOURS</p>
+          <h2 id="closing-heading">Your next opportunity<br>starts <em>here.</em></h2>
+          <p>Spend less time managing applications. Spend more time building your future.</p>
+          <div class="closing-actions">
+            <a class="button button-light" href="/dashboard">Get started <span aria-hidden="true">↗</span></a>
+            <a class="button button-quiet" href="https://github.com/commitwizard-5/wellfound_latest_automation" target="_blank" rel="noreferrer">Explore the project <span aria-hidden="true">↗</span></a>
+          </div>
+          <span class="closing-local"><span aria-hidden="true"></span> A local-first workflow · you stay in control</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="wordmark footer-wordmark" href="#top" aria-label="AutoWell, back to top"><span class="wordmark-symbol" aria-hidden="true">w<span>.</span></span><span class="wordmark-name">autowell<small>INDEPENDENT PROJECT · WELLFOUND WORKFLOW</small></span></a>
+      <p>Built for a more thoughtful job search.</p>
+      <div class="footer-links"><a href="https://github.com/commitwizard-5/wellfound_latest_automation" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a><a href="/dashboard">Open the local workspace <span aria-hidden="true">↗</span></a></div>
+    </footer>
+  </body>
+</html>
