@@ -1,31 +1,104 @@
-# Autowell
+# AutoWell
 
-Autowell is a local-first AI job application workflow assistant. It collects Wellfound job listings, lets you review roles in a browser dashboard, and generates tailored cover letters using configured AI providers or its built-in offline template.
+<p align="center">
+  <strong>A more thoughtful way through the busywork of a job search.</strong><br>
+  Discover Wellfound opportunities, prepare grounded applications, and keep the candidate in control.
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11 or newer"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-local%20web%20app-009688?logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <img src="https://img.shields.io/badge/Browser-Firefox%20%2B%20Selenium-FF7139?logo=firefoxbrowser&logoColor=white" alt="Firefox and Selenium">
+  <img src="https://img.shields.io/badge/AI-Gemini%20%2B%20optional%20DeepSeek-8B5CF6" alt="Gemini with optional DeepSeek fallback">
+</p>
+
+## The experience
+
+The project opens with a cinematic mountain landscape, then turns the scroll into a guided tour of the real application: source-code chapters, the job-search workflow, an interactive sample dashboard, verified capabilities, the system architecture, project milestones, and a final workspace link.
+
+The scrolling preview below is an animated capture of the landing page—not a separate mockup:
+
+<p align="center">
+  <img src="docs/landing-scroll.gif" alt="Animated walkthrough scrolling through the AutoWell landing page, from its mountain hero through product and architecture sections" width="800">
+</p>
+
+The landing page and application dashboard are both served by the existing FastAPI app:
+
+- **Showcase:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Working dashboard:** [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
+
+Start the app with `python main.py`; see [Setup](#setup).
+
+## Architecture
+
+<p align="center">
+  <a href="docs/autowell-architecture.html"><strong>Open the interactive AutoWell architecture diagram ↗</strong></a><br>
+  <sub>Standalone HTML with pan, zoom, light/dark themes, and animated relationships.</sub>
+</p>
+
+The interactive map follows the current repository: local FastAPI routes and background workers coordinate Wellfound discovery, Selenium/Firefox application handling, optional AI providers, local resume context, in-memory session state, and the Excel application log.
+
+<p align="center">
+  <img src="docs/autoply-architecture.jpg" alt="Original AutoPly system architecture illustration supplied with the project" width="800">
+</p>
+
+<sub>The supplied AutoPly illustration is retained as an earlier project sketch. Some labels and components describe a previous design, so the interactive diagram above is the code-backed view of the current application.</sub>
+
+## How it works
+
+1. Configure a signed-in Firefox profile and your candidate details in the local dashboard.
+2. Filter and import visible job cards from Wellfound.
+3. Select the opportunities you want to process.
+4. AutoWell reads each role, prepares a cover letter, and inspects the application form.
+5. Known answers can be reused; unsupported required questions stop for your review.
+6. Application attempts and outcomes are recorded locally.
+
+The application uses a configured Gemini provider first, optional DeepSeek next, and a built-in local cover-letter template if neither returns usable content. AI credentials are optional.
 
 ## Setup
 
 1. Create and activate a Python 3.11+ virtual environment.
-2. Install dependencies with `pip install -e .`.
-3. Copy `.env.example` to `.env`. Set your Firefox profile path; a resume path is recommended but optional. Gemini and DeepSeek API keys are optional; without either key Autowell generates cover letters locally from available job and resume information.
-4. Autowell looks for geckodriver in `GECKODRIVER_PATH`, `PATH`, its persistent local cache, and the previous `webdriver_manager` cache, in that order. Only if none exists does it download a driver from GitHub; successful downloads are saved under the user's local application cache and reused for later imports. To use a manually installed driver or avoid GitHub entirely, set `GECKODRIVER_PATH` in `.env`, for example:
+2. Install the project:
 
-   ```dotenv
-   GECKODRIVER_PATH=C:/tools/geckodriver.exe
+   ```bash
+   pip install -e .
    ```
 
-   Use the full path to `geckodriver.exe` on Windows. If there is no local or cached driver and GitHub is unavailable on the first run, install geckodriver separately and set this value.
-5. Run `python main.py` and open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the project showcase. Open [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard) for the local application dashboard.
+3. Copy `.env.example` to `.env`. Set the path to your signed-in Firefox profile. A resume PDF is optional but can provide relevant experience and links.
+4. Optionally add `GEMINI_API_KEY` and/or `DEEPSEEK_API_KEY`. Without provider keys, cover letters use the built-in template.
+5. Run the server and open the showcase:
 
-The landing page and `templates/index.html` dashboard are server-rendered Jinja templates, not standalone pages. Their template values and functionality require running `main.py`.
+   ```bash
+   python main.py
+   ```
 
-Dashboard forms use a random CSRF token checked against a `SameSite=Strict` cookie, helping prevent other websites from silently triggering local settings changes, job imports, or application submissions in an open browser session.
+   Visit [http://127.0.0.1:8000/](http://127.0.0.1:8000/) or open the working dashboard directly at [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard).
 
-Cover letters use a three-level provider chain: Gemini (`GEMINI_API_KEY`, with legacy `API_KEY` support), optional DeepSeek (`DEEPSEEK_API_KEY`) through its OpenAI-compatible API, then a built-in offline template. Temporary provider failures receive a bounded retry; permanent errors and invalid responses move to the next provider. The template uses only available job/resume details and works without API keys or internet access. Application records include the provider used. Gemini/DeepSeek may also answer application questions; required questions without a supported answer still block submission.
+AutoWell searches for geckodriver in `GECKODRIVER_PATH`, `PATH`, and its local driver caches before trying a download. To use a manually installed driver, set its full path in `.env`, for example `GECKODRIVER_PATH=C:/tools/geckodriver.exe`.
 
-Wellfound application forms are scanned inside the visible application modal or form, ranking candidate containers by their actual controls rather than assuming the first dialog is the form. The scanner recognizes visible and label-backed native/accessible controls, groups radio options, and scrolls the modal to reveal lazy-loaded fields before matching labels, ARIA names, options, and surrounding question text. Saved profile answers and the reusable question library take priority; sensitive experience, eligibility, and personal facts are never invented. Cover letters are written only into explicitly labeled cover-letter fields. Unmatched questions appear under the shortlist so you can save a confirmed answer for future roles; required unanswered questions pause the selected batch and are not submitted. Application form counts, proposed dry-run answers, unknown questions, cover-letter detection, and validation status are shown in the dashboard.
+## Candidate control and data
 
-To safely inspect a selected application without changing fields or submitting, set `AUTOWELL_DRY_RUN=true` in `.env`, restart Autowell, and use **Generate & submit selected applications** as usual. The dashboard will show detected questions and proposed saved answers; AI calls and cover-letter insertion are disabled in dry-run mode. Set it back to `false` before normal use. When form detection fails, Autowell saves a local screenshot and the application modal HTML under `form_debug/` and reports control counts by type; these diagnostics may contain personal data, so keep them private.
+- Applications are submitted immediately when the dashboard is in normal mode. Review selected jobs before starting; there is no pre-submission cover-letter preview.
+- Set `AUTOWELL_DRY_RUN=true` in `.env` to inspect forms without AI calls, letter insertion, or application submission.
+- Required questions without a supported, confirmed answer pause the workflow for review instead of inventing personal information.
+- Dashboard settings and saved answers are stored in `.env`; the shortlist and progress use in-memory state; application records are stored in `job_applications.xlsx`.
+- If an AI provider is used, resume text and links, saved answers, job descriptions, and application questions may be sent to that provider. Use only with the resume owner's consent and review the provider's data-handling terms.
+- Keep `.env`, resume files, application records, and `form_debug/` diagnostics private. Diagnostics may contain personal data.
 
-The job importer stays on Wellfound's main jobs page, applies available search and filter controls there, and imports visible result cards without opening each job page. If a requested filter control is unavailable, the import continues and reports which filters could not be applied. It does not use a separate Wellfound API.
+## Project layout
 
-The dashboard server binds only to your computer, but that does not mean all data stays on your device. When an AI provider is used, extracted resume text and links, saved reusable answers, the job description, and application questions may be sent to that provider. Review the providers' current data-handling terms and use this feature only with the resume owner's informed consent. Phone, referral, referral contact, visa sponsorship, and relocation answers are saved locally in `.env`; enter your real answers before submitting. If a required question cannot be answered using your resume or saved profile answers, the application is not submitted. Keep API keys in `.env` and never commit that file. Application attempts, including failures and the cover-letter provider, are recorded in `job_applications.xlsx` in the project directory. Selecting jobs and clicking **Generate & submit selected applications** submits them immediately without a cover-letter preview. Review the selected roles before clicking.
+```text
+autoapply/       FastAPI web routes, Wellfound importer, application workflow
+templates/       Server-rendered showcase and working dashboard
+static/          Landing-page interactions, styling, and local mountain image
+docs/            Interactive architecture, scroll preview, supplied sketch
+tests/           Application, provider fallback, driver, and route tests
+```
+
+## Tests
+
+Run the test suite with:
+
+```bash
+python -m unittest discover -s tests -v
+```
